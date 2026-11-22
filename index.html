@@ -156,7 +156,7 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -223,6 +223,44 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <div class="card" style="margin-top:14px">
     <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">40 baris terakhir menurut tanggal</div></div><div><select id="bFil"><option value="">Semua kategori</option></select> <button class="tbtn" id="bRef">Muat ulang</button></div></div>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kategori</th><th class="l">Sub-kategori</th><th class="l">Keterangan</th><th>Jumlah</th><th class="l">Dicatat oleh</th></tr></thead><tbody id="bRec"></tbody></table></div>
+  </div>
+</section>
+<section class="tab" id="t-hp">
+  <div class="kpis" id="hKpi"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Catat hutang atau piutang</h3>
+    <div class="d">Pakai <b>Tambah</b> saat hutang/piutang baru muncul (mis. beli bahan tempo, meminjamkan uang) dan <b>Bayar</b> saat ada pelunasan atau cicilan. Saldo tiap pihak = total Tambah dikurangi total Bayar. Data masuk ke tab Hutang_Piutang di Master 2 dan terbaca di Keuangan v2. Salah catat? Tambah baris jumlah negatif dengan kata "Koreksi" di keterangan; data lama tidak dihapus.</div>
+    <div class="bf">
+      <div><label>Tanggal</label><input type="date" id="hTgl"></div>
+      <div><label>Jenis</label><select id="hJenis"></select></div>
+      <div><label>Kejadian</label><select id="hKej"><option value="tambah">Tambah (baru)</option><option value="bayar">Bayar (pelunasan / cicilan)</option></select></div>
+      <div class="c2"><label>Pihak</label><input type="text" id="hPihak" list="dlPihak" autocomplete="off" placeholder="mis. GTB Jakarta, Yusril"><datalist id="dlPihak"></datalist></div>
+      <div><label>Jumlah (Rp)</label><input type="text" id="hJml" inputmode="numeric" placeholder="5.000.000"></div>
+      <div class="c3"><label>Keterangan</label><input type="text" id="hKet" placeholder="mis. PO 261101 tempo 14 hari / cicilan ke-2"></div>
+      <div><label>Jatuh tempo (opsional)</label><input type="date" id="hTempo"></div>
+      <div class="c2"><label>Ref / bukti (opsional)</label><input type="text" id="hRef" placeholder="no PO, link nota"></div>
+    </div>
+    <div class="bar"><button class="btn gold" id="hAdd">Tambah ke daftar</button><span class="sub" id="hSaldoInfo"></span></div>
+    <div class="msg" id="hMsg"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Daftar yang akan disimpan <span class="sub" id="hAntN"></span></h3>
+    <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Jenis</th><th class="l">Pihak</th><th class="l">Keterangan</th><th>Tambah</th><th>Bayar</th><th class="l">Jatuh tempo</th><th></th></tr></thead><tbody id="hAnt"></tbody></table></div>
+    <div class="bar"><button class="btn gold" id="hSave" disabled>Simpan semua</button><button class="btn" id="hClr" disabled>Kosongkan daftar</button><label class="sub"><input type="checkbox" id="hGanda"> izinkan ganda</label><label class="sub"><input type="checkbox" id="hLebih"> izinkan bayar melebihi saldo</label></div>
+    <details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Input banyak baris (CSV atau tempel dari Excel / Google Sheets), mis. saldo awal Hutang Bahan</summary>
+      <div class="d" style="margin-top:8px">Urutan kolom: Tanggal, Jenis, Pihak, Keterangan, Tambah, Bayar, Jatuh_Tempo, Ref. Isi salah satu dari Tambah atau Bayar. Semua baris diperiksa dulu; satu baris salah tidak membuat yang lain tersimpan sebagian.</div>
+      <div class="bar"><button class="btn" id="hTpl">Unduh template CSV</button><button class="btn" id="hCsv">Pilih file CSV…</button><input type="file" id="hCsvIn" accept=".csv,.txt,text/csv" style="display:none"></div>
+      <textarea class="paste" id="hPaste" style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px"></textarea>
+      <div class="bar"><button class="btn" id="hPasteBtn">Masukkan ke daftar</button></div>
+    </details>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="hd"><div><h3>Saldo berjalan per pihak</h3><div class="d">Yang masih terbuka. Tombol Bayar mengisi form di atas dengan pihak dan sisa saldo.</div></div><div><button class="tbtn" id="hRef2">Muat ulang</button></div></div>
+    <div class="tw"><table><thead><tr><th class="l">Jenis</th><th class="l">Pihak</th><th>Saldo</th><th class="l">Jatuh tempo</th><th>Umur</th><th></th></tr></thead><tbody id="hBuka"></tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">25 baris terakhir menurut tanggal</div></div></div>
+    <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Jenis</th><th class="l">Pihak</th><th class="l">Keterangan</th><th>Tambah</th><th>Bayar</th></tr></thead><tbody id="hRec"></tbody></table></div>
   </div>
 </section>
 <footer id="foot">Tidak ada data tersimpan di halaman ini. Kunci hanya diingat di browser kamu.</footer>
@@ -483,7 +521,7 @@ $('#impBtn').onclick=async()=>{if(!SIM||!R)return;if(!confirm('Tulis '+SIM.baru+
 $('#clrBtn').onclick=()=>{WB={};NAMA={};R=null;SIM=null;$('#fi').value='';$('#files').innerHTML='';tampilFile();$('#hasil').style.display='none';$('#kpis').innerHTML='';$('#cek').innerHTML='';$('#ringkas').innerHTML='';$('#simOut').innerHTML='';$('#stat').textContent='';$('#pgw').style.display='none';$('#pg').style.width='0';$('#paksaW').style.display='none';$('#paksa').checked=false;$('#impBtn').disabled=true;$('#simBtn').disabled=true;window.scrollTo({top:0,behavior:'smooth'})};
 
 /* ===== Tab ===== */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya()});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya()});
 /* ===== Input Biaya ===== */
 const BK={kategori:['Operasional','Bahan Pokok','Bahan Pendukung','Iklan','Amal'],sub:{},metode:[],terbaru:[],bulan_ini:null,dimuat:false};
 const IKL=['Iklan TikTok','Iklan Shopee','Iklan Lazada','Iklan CPAS','Iklan IG Video','Iklan TikTok Video','Iklan KOL','Iklan Lain-lain'];
@@ -592,6 +630,60 @@ $('#sRun').onclick=async()=>{$('#sRun').disabled=true;$('#sCek').disabled=true;
   catch(e){pesanS(e.message,false);$('#sRun').disabled=false}$('#sCek').disabled=false};
 awalSink();
 rAnt();if($('#bTgl'))$('#bTgl').value=hariIni();
+
+/* ===== Hutang & Piutang ===== */
+const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
+const HP={dimuat:false,d:null};let HANT=[];
+function pesanH(t,ok){const m=$('#hMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+function hpIsi(){$('#hJenis').innerHTML=JHP.map(j=>`<option>${j}</option>`).join('');if(!$('#hTgl').value)$('#hTgl').value=hariIni();hpPihak()}
+function hpPihak(){const d=HP.d,j=$('#hJenis').value;$('#dlPihak').innerHTML=((d&&d.pihak&&d.pihak[j])||[]).map(p=>`<option value="${esc(p)}">`).join('');hpInfo()}
+function hpInfo(){const d=HP.d,j=$('#hJenis').value,p=$('#hPihak').value.trim(),el=$('#hSaldoInfo');if(!d||!p){el.textContent='';return}
+  const k=j+'|'+p;const sa=d.saldo_pihak&&d.saldo_pihak[k];const pend=HANT.filter(x=>x.jenis===j&&x.pihak===p).reduce((a,x)=>a+(x.tambah||0)-(x.bayar||0),0);
+  el.textContent=sa===undefined&&!pend?'Pihak baru di jenis ini.':'Saldo sekarang '+rp(sa||0)+(pend?' · setelah daftar di bawah '+rp((sa||0)+pend):'')}
+async function muatHP(){try{const d=await jsonpB('hp_input');if(d.error)throw new Error(d.error);HP.d=d;HP.dimuat=true;hpIsi();hKpi();hBuka();hRec()}catch(e){pesanH('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanHutangPiutang() sekali di editor Apps Script dulu.':''),false)}}
+function hKpi(){const d=HP.d;if(!d)return;const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  $('#hKpi').innerHTML=JHP.map(j=>{const g=d.ringkas[j]||{total:0,n_buka:0,terlambat:0};return kp(j,rp(g.total),g.n_buka+' pihak terbuka'+(g.terlambat?' · '+g.terlambat+' lewat jatuh tempo':''))}).join('')}
+function hBuka(){const d=HP.d;if(!d)return;const L=d.buka||[];
+  $('#hBuka').innerHTML=L.length?L.map((x,i)=>`<tr><td class="l">${esc(x.jenis)}</td><td class="l">${esc(x.pihak)}</td><td>${rp(x.saldo)}</td><td class="l">${x.tempo?esc(x.tempo)+(x.terlambat?' <b style="color:#ffb3b3">lewat</b>':''):'-'}</td><td>${x.umur==null?'-':x.umur+' hari'}</td><td>${x.saldo>0?`<button class="tbtn" data-i="${i}">Bayar</button>`:''}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada saldo terbuka.</td></tr>';
+  document.querySelectorAll('#hBuka .tbtn').forEach(b=>b.onclick=()=>{const x=L[+b.dataset.i];$('#hJenis').value=x.jenis;hpPihak();$('#hKej').value='bayar';$('#hPihak').value=x.pihak;$('#hJml').value=Math.round(x.saldo).toLocaleString('id-ID');$('#hKet').focus();hpInfo();window.scrollTo({top:0,behavior:'smooth'})})}
+function hRec(){const d=HP.d;if(!d)return;$('#hRec').innerHTML=d.terbaru.length?d.terbaru.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.jenis)}</td><td class="l">${esc(x.pihak)}</td><td class="l wrp">${esc(x.ket)}</td><td>${x.tambah?rp(x.tambah):''}</td><td>${x.bayar?rp(x.bayar):''}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada data.</td></tr>'}
+function cekH(x){if(!x.tgl)return 'Tanggal tidak valid';if(x.tgl>hariIni())return 'Tanggal tidak boleh di masa depan';if(!JHP.includes(x.jenis))return 'Jenis harus salah satu dari: '+JHP.join(', ');if(!x.pihak)return 'Pihak wajib diisi';
+  if(x.tempoRaw&&!x.tempo)return 'Jatuh tempo tidak valid';if(!x.ket)return 'Keterangan wajib diisi';
+  const a=x.tambah||0,b=x.bayar||0;if(isNaN(a)||isNaN(b))return 'Jumlah tidak valid';if((a?1:0)+(b?1:0)!==1)return 'Isi salah satu: Tambah atau Bayar';if((a<0||b<0)&&!/koreksi/i.test(x.ket))return 'Jumlah negatif hanya untuk koreksi: tulis "Koreksi" di keterangan';return ''}
+function rHAnt(){const ta=HANT.reduce((a,x)=>a+(x.tambah||0),0),tb=HANT.reduce((a,x)=>a+(x.bayar||0),0);$('#hAntN').textContent=HANT.length?'· '+HANT.length+' baris · tambah '+rp(ta)+' · bayar '+rp(tb):'';
+  $('#hAnt').innerHTML=HANT.length?HANT.map((x,i)=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.jenis)}</td><td class="l">${esc(x.pihak)}</td><td class="l wrp">${esc(x.ket)}</td><td>${x.tambah?rp(x.tambah):''}</td><td>${x.bayar?rp(x.bayar):''}</td><td class="l">${esc(x.tempo||'')}</td><td><button class="x" data-i="${i}" title="buang">✕</button></td></tr>`).join('')+`<tr class="tot"><td class="l" colspan="4">Total</td><td>${rp(ta)}</td><td>${rp(tb)}</td><td colspan="2"></td></tr>`:'<tr><td colspan="8" class="empty">Daftar kosong.</td></tr>';
+  document.querySelectorAll('#hAnt .x').forEach(b=>b.onclick=()=>{HANT.splice(+b.dataset.i,1);rHAnt();hpInfo()});$('#hSave').disabled=!HANT.length;$('#hClr').disabled=!HANT.length}
+$('#hJenis').onchange=hpPihak;$('#hPihak').oninput=hpInfo;$('#hRef2').onclick=muatHP;
+$('#hAdd').onclick=()=>{const j=angkaB($('#hJml').value),k=$('#hKej').value;const x={tgl:tglB($('#hTgl').value),jenis:$('#hJenis').value,pihak:$('#hPihak').value.trim(),ket:$('#hKet').value.trim(),tambah:k==='tambah'?j:0,bayar:k==='bayar'?j:0,tempoRaw:$('#hTempo').value,tempo:k==='tambah'?tglB($('#hTempo').value):'',ref:$('#hRef').value.trim()};
+  if(k==='bayar'){x.tempoRaw='';x.tempo=''}const e=cekH(x);if(e){pesanH(e,false);return}
+  HANT.push(x);$('#hMsg').className='msg';$('#hKet').value='';$('#hJml').value='';$('#hRef').value='';$('#hTempo').value='';rHAnt();hpInfo();$('#hKet').focus()};
+$('#hClr').onclick=()=>{HANT=[];rHAnt();hpInfo()};
+function jenisOk(v){const s=String(v||'').trim().toLowerCase();return JHP.find(j=>j.toLowerCase()===s)||String(v||'').trim()}
+function masukTabelH(rows){if(!rows.length){pesanH('Tidak ada baris yang terbaca.',false);return false}const gal=[];let n=0;
+  rows.forEach((c,i)=>{if(i===0&&/^tanggal$/i.test((c[0]||'').trim()))return;
+    const tb=(c[4]||'').trim(),by=(c[5]||'').trim(),tp=(c[6]||'').trim();
+    const x={tgl:tglB(c[0]),jenis:jenisOk(c[1]),pihak:(c[2]||'').trim(),ket:(c[3]||'').trim(),tambah:tb?angkaB(tb):0,bayar:by?angkaB(by):0,tempoRaw:tp,tempo:tp?tglB(tp):'',ref:(c[7]||'').trim()};
+    const e=cekH(x);if(e)gal.push('Baris '+(i+1)+': '+e);else{HANT.push(x);n++}});
+  rHAnt();hpInfo();if(gal.length)pesanH(n+' baris masuk ke daftar. Ditolak '+gal.length+': '+gal.slice(0,6).join(' | ')+(gal.length>6?' …':'')+' · Perbaiki di file lalu unggah ulang baris yang ditolak.',false);
+  else pesanH(n+' baris masuk ke daftar. Periksa dulu, lalu tekan Simpan semua.',true);return !gal.length}
+$('#hPasteBtn').onclick=()=>{if(masukTabelH(parseTabel($('#hPaste').value)))$('#hPaste').value=''};
+$('#hCsv').onclick=()=>$('#hCsvIn').click();
+$('#hCsvIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{masukTabelH(parseTabel(r.result));$('#hCsvIn').value=''};r.onerror=()=>pesanH('File tidak bisa dibaca.',false);r.readAsText(f,'utf-8')};
+$('#hTpl').onclick=()=>{const T0=hariIni();const c=['Tanggal,Jenis,Pihak,Keterangan,Tambah,Bayar,Jatuh_Tempo,Ref',
+  T0+',Hutang Bahan,CONTOH hapus baris ini: GTB Jakarta,Saldo awal hutang bahan,12500000,,'+T0+',',
+  T0+',Hutang Bahan,CONTOH hapus baris ini: GTB Jakarta,Cicilan pertama,,2500000,,',
+  T0+',Piutang Orang,CONTOH hapus baris ini: Mas Dika,Pinjaman baru,1000000,,,'].join('\r\n')+'\r\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+c],{type:'text/csv;charset=utf-8'}));a.download='Template-Hutang-Piutang.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+async function hpost(baris,dry){return postOp({op:'hp_catat',baris,dry:!!dry,izinkan_ganda:$('#hGanda').checked,izinkan_lebih:$('#hLebih').checked})}
+$('#hSave').onclick=async()=>{if(!HANT.length)return;$('#hSave').disabled=true;$('#hClr').disabled=true;
+  try{const kirim=HANT.map(x=>({tgl:x.tgl,jenis:x.jenis,pihak:x.pihak,ket:x.ket,tambah:x.tambah||0,bayar:x.bayar||0,tempo:x.tempo||'',ref:x.ref})),P=[];for(let i=0;i<kirim.length;i+=50)P.push(kirim.slice(i,i+50));
+    pesanH('Memeriksa…',true);for(const c of P)await hpost(c,true);
+    const ta=HANT.reduce((a,x)=>a+(x.tambah||0),0),tb=HANT.reduce((a,x)=>a+(x.bayar||0),0);if(!confirm('Simpan '+HANT.length+' baris (tambah '+rp(ta)+', bayar '+rp(tb)+') ke Master 2?')){pesanH('Dibatalkan, daftar tetap ada.',true);rHAnt();return}
+    let ok=0;for(const c of P){const r=await hpost(c,false);ok+=r.ditulis;HANT.splice(0,c.length);rHAnt()}
+    pesanH('Tersimpan '+ok+' baris. Tercatat di LOG_PERUBAHAN.',true);$('#hGanda').checked=false;$('#hLebih').checked=false;await muatHP()}
+  catch(e){pesanH(e.message+(HANT.length?' · Daftar tetap ada, perbaiki lalu simpan lagi. Yang sudah tertulis tidak akan dobel.':''),false)}
+  rHAnt()};
+rHAnt();
 </script>
 </body>
 </html>
