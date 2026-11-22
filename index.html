@@ -702,7 +702,7 @@ $('#kCek').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;p
   catch(e){$('#kOut').innerHTML='';pesanK(e.message,false)}$('#kCek').disabled=false};
 $('#kRun').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;
   try{const c=await postOp(kBody(true));if(!confirm('Tulis '+c.baru+' baris baru ke Buku_Kas?')){pesanK('Dibatalkan.',true);$('#kRun').disabled=false;$('#kCek').disabled=false;return}
-    const r=await postOp(kBody(false));pesanK('Tersimpan '+r.ditulis+' baris. Tercatat di LOG_PERUBAHAN.',true);$('#kOut').innerHTML=''}
+    const r=await postOp(kBody(false));pesanK('Tersimpan '+r.ditulis+' baris.'+(r.log_galat?' CATATAN: baris LOG_PERUBAHAN gagal ditulis ('+r.log_galat+'). Catat manual.':' Tercatat di LOG_PERUBAHAN.'),!r.log_galat);$('#kOut').innerHTML=''}
   catch(e){pesanK(e.message,false);$('#kRun').disabled=false}$('#kCek').disabled=false};
 /* ----- Upload Affiliate ----- */
 const AF=[];const BLN3={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
@@ -737,15 +737,15 @@ $('#afCek').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=tru
   catch(e){$('#afOut').innerHTML='';pesanAf(e.message,false)}$('#afCek').disabled=false};
 $('#afRun').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=true;
   try{if(!confirm('Simpan '+AF.length+' file affiliate ke Master 3?')){pesanAf('Dibatalkan.',true);$('#afRun').disabled=false;$('#afCek').disabled=false;return}
-    let n=0,s=0,lambat=false;const UK=150;
+    let n=0,s=0,lambat=false,lg='';const UK=150;
     for(const x of AF){const bag=Math.ceil(x.rows.length/UK);for(let i=0;i<bag;i++){const b=afBody(x,false);b.baris=x.rows.slice(i*UK,(i+1)*UK);b.bagian=(i+1)+'/'+bag;
       pesanAf('Menyimpan '+(x.plat==='Tokopedia'?'TikTok':x.plat)+' bagian '+(i+1)+' dari '+bag+'…',true);
       let r;try{r=await postOp(b)}catch(e){if(!/fetch|network/i.test(e.message))throw e;
         /* jawaban server hilang: cek apakah bagian ini sebenarnya sudah tertulis (dry run: tidak ada yang baru/berubah) */
         await new Promise(z=>setTimeout(z,3000));const c=await postOp(Object.assign({},b,{dry:true}));
         if(c.afiliator_baru===0&&c.snap_baru===0&&c.snap_diubah===0){r={afiliator_baru:0,snap_baru:0,snap_diubah:0};lambat=true}else r=await postOp(b)}
-      n+=r.afiliator_baru;s+=r.snap_baru+r.snap_diubah}}
-    pesanAf(lambat?'Data sudah tertulis di Master 3, tetapi jawaban server terlambat sehingga hitungan di sini tidak lengkap. Cek LOG_PERUBAHAN dan Afiliator_Snapshot untuk memastikan.':'Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.',true);$('#afOut').innerHTML='';AF.length=0;rAfList()}
+      n+=r.afiliator_baru;s+=r.snap_baru+r.snap_diubah;if(r.log_galat)lg=r.log_galat}}
+    pesanAf(lambat?'Data sudah tertulis di Master 3, tetapi jawaban server terlambat sehingga hitungan di sini tidak lengkap. Cek LOG_PERUBAHAN dan Afiliator_Snapshot untuk memastikan.':'Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.'+(lg?' CATATAN: data sudah tersimpan tetapi baris LOG_PERUBAHAN gagal ditulis ('+lg+'). Catat manual.':''),!lg);$('#afOut').innerHTML='';AF.length=0;rAfList()}
   catch(e){pesanAf(e.message+' · Aman diulang: baris yang sudah tertulis tidak akan dobel.',false);$('#afRun').disabled=false}$('#afCek').disabled=false};
 /* ===== Hutang & Piutang ===== */
 const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
