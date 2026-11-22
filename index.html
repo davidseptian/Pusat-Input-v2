@@ -737,12 +737,15 @@ $('#afCek').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=tru
   catch(e){$('#afOut').innerHTML='';pesanAf(e.message,false)}$('#afCek').disabled=false};
 $('#afRun').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=true;
   try{if(!confirm('Simpan '+AF.length+' file affiliate ke Master 3?')){pesanAf('Dibatalkan.',true);$('#afRun').disabled=false;$('#afCek').disabled=false;return}
-    let n=0,s=0;const UK=150;
+    let n=0,s=0,lambat=false;const UK=150;
     for(const x of AF){const bag=Math.ceil(x.rows.length/UK);for(let i=0;i<bag;i++){const b=afBody(x,false);b.baris=x.rows.slice(i*UK,(i+1)*UK);b.bagian=(i+1)+'/'+bag;
       pesanAf('Menyimpan '+(x.plat==='Tokopedia'?'TikTok':x.plat)+' bagian '+(i+1)+' dari '+bag+'…',true);
-      let r;try{r=await postOp(b)}catch(e){if(!/fetch|network/i.test(e.message))throw e;await new Promise(z=>setTimeout(z,2500));r=await postOp(b)}
+      let r;try{r=await postOp(b)}catch(e){if(!/fetch|network/i.test(e.message))throw e;
+        /* jawaban server hilang: cek apakah bagian ini sebenarnya sudah tertulis (dry run: tidak ada yang baru/berubah) */
+        await new Promise(z=>setTimeout(z,3000));const c=await postOp(Object.assign({},b,{dry:true}));
+        if(c.afiliator_baru===0&&c.snap_baru===0&&c.snap_diubah===0){r={afiliator_baru:0,snap_baru:0,snap_diubah:0};lambat=true}else r=await postOp(b)}
       n+=r.afiliator_baru;s+=r.snap_baru+r.snap_diubah}}
-    pesanAf('Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.',true);$('#afOut').innerHTML='';AF.length=0;rAfList()}
+    pesanAf(lambat?'Data sudah tertulis di Master 3, tetapi jawaban server terlambat sehingga hitungan di sini tidak lengkap. Cek LOG_PERUBAHAN dan Afiliator_Snapshot untuk memastikan.':'Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.',true);$('#afOut').innerHTML='';AF.length=0;rAfList()}
   catch(e){pesanAf(e.message+' · Aman diulang: baris yang sudah tertulis tidak akan dobel.',false);$('#afRun').disabled=false}$('#afCek').disabled=false};
 /* ===== Hutang & Piutang ===== */
 const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
