@@ -156,7 +156,7 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -277,6 +277,17 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
     <div class="bar"><button class="btn" id="kCek">Cek dulu</button><button class="btn gold" id="kRun" disabled>Tarik sekarang</button></div>
     <div class="msg" id="kMsg"></div>
     <div id="kOut" style="margin-top:10px"></div>
+  </div>
+</section>
+<section class="tab" id="t-af">
+  <div class="card" style="margin-top:14px">
+    <h3>Upload Affiliate bulanan</h3>
+    <div class="d">Unggah laporan affiliate bulanan: Shopee (AMS Affiliate Performance, .csv atau .xlsx) dan TikTok Shop / Tokopedia (Creator List, .xlsx). Platform dan bulan dikenali otomatis dari isi dan nama file; periksa bulannya sebelum lanjut. Data masuk ke Master 3 (Afiliator dan Afiliator_Snapshot) sebagai riwayat bulanan, lalu muncul di dashboard Affiliate. Upload ulang bulan yang sama hanya mengoreksi angka bulan itu, tidak membuat akun atau baris dobel. File dibaca di browser ini.</div>
+    <div class="drop" id="afDrop">Tarik file affiliate ke sini atau klik untuk memilih<input type="file" id="afFi" accept=".csv,.xlsx" multiple style="display:none"></div>
+    <div id="afList" style="margin-top:12px"></div>
+    <div class="bar"><button class="btn" id="afCek" disabled>Cek dulu</button><button class="btn gold" id="afRun" disabled>Simpan ke Master 3</button><button class="btn" id="afClr" disabled>Kosongkan</button></div>
+    <div class="msg" id="afMsg"></div>
+    <div id="afOut" style="margin-top:10px"></div>
   </div>
 </section>
 <section class="tab" id="t-pb">
@@ -693,6 +704,42 @@ $('#kRun').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;
   try{const c=await postOp(kBody(true));if(!confirm('Tulis '+c.baru+' baris baru ke Buku_Kas?')){pesanK('Dibatalkan.',true);$('#kRun').disabled=false;$('#kCek').disabled=false;return}
     const r=await postOp(kBody(false));pesanK('Tersimpan '+r.ditulis+' baris. Tercatat di LOG_PERUBAHAN.',true);$('#kOut').innerHTML=''}
   catch(e){pesanK(e.message,false);$('#kRun').disabled=false}$('#kCek').disabled=false};
+/* ----- Upload Affiliate ----- */
+const AF=[];const BLN3={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
+function pesanAf(t,ok){const m=$('#afMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+function afNum(v){if(v===''||v==null||v==='--'||v==='-')return 0;if(typeof v==='number')return isFinite(v)?v:0;const x=Number(String(v).replace(/[^\d.\-]/g,''));return isFinite(x)?x:0}
+function afBulan(nama){let m=/(20\d{2})(\d{2})\d{2}[-_](20\d{2})(\d{2})\d{2}/.exec(nama);if(m&&m[1]===m[3]&&m[2]===m[4]&&+m[2]>=1&&+m[2]<=12)return m[1]+'-'+m[2];
+  const re=/[_\- ]([A-Za-z]{3})[A-Za-z]*[_\- ](20\d{2})(?!\d)/g;while((m=re.exec(nama))){const k=BLN3[m[1].toLowerCase()];if(k)return m[2]+'-'+String(k).padStart(2,'0')}return ''}
+function afParse(rows){const h=(rows[0]||[]).map(x=>String(x==null?'':x).trim()),ix=n=>h.indexOf(n);
+  if(ix('Affiliate Username')>=0){const c={u:ix('Affiliate Username'),n:ix('Affiliate Name'),g:ix('Sales(Rp)'),j:ix('Item Sold'),k:ix('Est.Commission(Rp)')};if(c.g<0||c.j<0||c.k<0)throw new Error('Kolom Shopee tidak lengkap (perlu Sales(Rp), Item Sold, Est.Commission(Rp))');
+    return{plat:'Shopee',rows:rows.slice(1).filter(r=>r&&String(r[c.u]==null?'':r[c.u]).trim()).map(r=>({username:String(r[c.u]).trim(),nama:String(r[c.n]==null?'':r[c.n]).trim(),gmv:afNum(r[c.g]),jual:afNum(r[c.j]),kom:afNum(r[c.k])}))}}
+  if(ix('Creator username')>=0){const c={u:ix('Creator username'),g:ix('Affiliate GMV'),j:ix('Items sold'),p:ix('Affiliate products sold'),s:ix('Affiliate product showcase'),v:ix('Affiliate shoppable videos'),f:ix('Affiliate followers'),k:ix('Est. commission')};if(c.g<0||c.j<0||c.k<0)throw new Error('Kolom TikTok tidak lengkap (perlu Affiliate GMV, Items sold, Est. commission)');
+    return{plat:'Tokopedia',rows:rows.slice(1).filter(r=>r&&String(r[c.u]==null?'':r[c.u]).trim()).map(r=>{const u=String(r[c.u]).trim();return{username:u,nama:u,gmv:afNum(r[c.g]),jual:afNum(r[c.j]),promo:c.p<0?null:afNum(r[c.p]),show:c.s<0?null:afNum(r[c.s]),vid:c.v<0?null:afNum(r[c.v]),fol:c.f<0?null:afNum(r[c.f]),kom:afNum(r[c.k])}})}}
+  throw new Error('Format tidak dikenali: bukan laporan Shopee (kolom Affiliate Username) maupun TikTok (kolom Creator username)')}
+function bacaAf(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{try{const isCsv=/\.csv$/i.test(f.name);const wb=isCsv?XLSX.read(r.result,{type:'string'}):XLSX.read(new Uint8Array(r.result),{type:'array'});res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''}))}catch(e){rej(e)}};r.onerror=()=>rej(new Error('File tidak bisa dibaca'));if(/\.csv$/i.test(f.name))r.readAsText(f);else r.readAsArrayBuffer(f)})}
+function rAfList(){const L=$('#afList');if(!AF.length){L.innerHTML='';$('#afCek').disabled=true;$('#afRun').disabled=true;$('#afClr').disabled=true;return}
+  L.innerHTML=`<div class="tw"><table><thead><tr><th class="l">File</th><th class="l">Platform</th><th>Akun</th><th>GMV</th><th class="l">Bulan</th><th></th></tr></thead><tbody>${AF.map((x,i)=>`<tr><td class="l">${esc(x.nama)}</td><td class="l">${esc(x.plat==='Tokopedia'?'TikTok Shop (Tokopedia)':x.plat)}</td><td>${x.rows.length}</td><td>${rp(x.rows.reduce((a,r)=>a+r.gmv,0))}</td><td class="l"><input type="month" data-i="${i}" class="afBln" value="${esc(x.bulan)}"></td><td><button class="btn" data-x="${i}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`;
+  L.querySelectorAll('.afBln').forEach(e=>e.onchange=()=>{AF[+e.dataset.i].bulan=e.value;$('#afRun').disabled=true});L.querySelectorAll('[data-x]').forEach(e=>e.onclick=()=>{AF.splice(+e.dataset.x,1);$('#afOut').innerHTML='';$('#afRun').disabled=true;rAfList()});
+  $('#afCek').disabled=false;$('#afClr').disabled=false}
+async function afTambah(files){const gagal=[];for(const f of files){try{if(AF.some(x=>x.nama===f.name))throw new Error('sudah ada di daftar');const p=afParse(await bacaAf(f));if(!p.rows.length)throw new Error('tidak ada baris data');AF.push({nama:f.name,plat:p.plat,rows:p.rows,bulan:afBulan(f.name)})}catch(e){gagal.push(f.name+': '+e.message)}}
+  rAfList();$('#afOut').innerHTML='';$('#afRun').disabled=true;if(gagal.length)pesanAf(gagal.join(' · '),false);else pesanAf(AF.length?'File terbaca. Periksa platform dan bulan, lalu tekan Cek dulu.':'',true)}
+$('#afDrop').onclick=()=>$('#afFi').click();$('#afFi').onchange=e=>{afTambah([...e.target.files]);e.target.value=''};
+$('#afDrop').ondragover=e=>{e.preventDefault();$('#afDrop').classList.add('on')};$('#afDrop').ondragleave=()=>$('#afDrop').classList.remove('on');$('#afDrop').ondrop=e=>{e.preventDefault();$('#afDrop').classList.remove('on');afTambah([...e.dataTransfer.files])};
+$('#afClr').onclick=()=>{AF.length=0;$('#afOut').innerHTML='';pesanAf('',true);rAfList()};
+const afBody=(x,dry)=>({op:'aff_impor',dry,platform:x.plat,bulan:x.bulan,baris:x.rows});
+function afLst(L,j){return L.length?`<h4 style="margin:12px 0 6px;font-size:13px">${j}</h4><div class="tw"><table><thead><tr><th class="l">Username</th><th>Bulan lalu</th><th>Bulan ini</th><th>Perubahan</th></tr></thead><tbody>${L.map(x=>`<tr><td class="l">${esc(x.username)}</td><td>${rp(x.pv)}</td><td>${rp(x.cu)}</td><td>${x.pc>0?'+':''}${x.pc}%</td></tr>`).join('')}</tbody></table></div>`:''}
+function rAf(x,r){const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  return `<h4 style="margin:16px 0 6px;font-size:14px">${esc(x.plat==='Tokopedia'?'TikTok Shop':x.plat)} · ${esc(r.bulan)}</h4><div class="kpis">${kp('Akun di file',r.akun_file,r.akun_aktif+' dengan penjualan')+kp('Akun baru',r.afiliator_baru,'didaftarkan ke Master 3')+kp('Snapshot baru',r.snap_baru,r.snap_diubah+' dikoreksi · '+r.snap_sama+' sama')+kp('GMV',rp(r.gmv),'komisi '+rp(r.komisi))}</div>`+(r.hilang_dari_bulan_lalu?`<div class="sub" style="margin-top:6px">${r.hilang_dari_bulan_lalu} akun yang punya penjualan bulan lalu tidak ada di file ini (dihitung 0 di dashboard).</div>`:'')+afLst(r.naik_daun||[],'Naik daun (naik ≥ 50%, GMV ≥ Rp100 rb di salah satu bulan)')+afLst(r.mulai_sepi||[],'Mulai sepi (turun ≥ 50%)')}
+$('#afCek').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=true;pesanAf('Memeriksa…',true);let h='',tot=0;
+  try{if(AF.some(x=>!/^\d{4}-\d{2}$/.test(x.bulan)))throw new Error('Isi bulan untuk semua file dulu');const kunci={};AF.forEach(x=>{const k=x.plat+x.bulan;if(kunci[k])throw new Error('Dua file untuk platform dan bulan yang sama');kunci[k]=1});
+    for(const x of AF){const r=await postOp(afBody(x,true));h+=rAf(x,r);tot+=r.snap_baru+r.snap_diubah+r.afiliator_baru}
+    $('#afOut').innerHTML=h;$('#afRun').disabled=false;pesanAf('Hasil pengecekan di bawah. Belum ada yang ditulis. Tekan Simpan ke Master 3 bila sudah sesuai.',true)}
+  catch(e){$('#afOut').innerHTML='';pesanAf(e.message,false)}$('#afCek').disabled=false};
+$('#afRun').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=true;
+  try{if(!confirm('Simpan '+AF.length+' file affiliate ke Master 3?')){pesanAf('Dibatalkan.',true);$('#afRun').disabled=false;$('#afCek').disabled=false;return}
+    let n=0,s=0;for(const x of AF){const r=await postOp(afBody(x,false));n+=r.afiliator_baru;s+=r.snap_baru+r.snap_diubah}
+    pesanAf('Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.',true);$('#afOut').innerHTML='';AF.length=0;rAfList()}
+  catch(e){pesanAf(e.message+' · Aman diulang: baris yang sudah tertulis tidak akan dobel.',false);$('#afRun').disabled=false}$('#afCek').disabled=false};
 /* ===== Hutang & Piutang ===== */
 const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
 const HP={dimuat:false,d:null};let HANT=[];
