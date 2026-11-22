@@ -156,7 +156,7 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -261,6 +261,34 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <div class="card" style="margin-top:14px">
     <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">25 baris terakhir menurut tanggal</div></div></div>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Jenis</th><th class="l">Pihak</th><th class="l">Keterangan</th><th>Tambah</th><th>Bayar</th></tr></thead><tbody id="hRec"></tbody></table></div>
+  </div>
+</section>
+<section class="tab" id="t-pb">
+  <div class="kpis" id="pKpi"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Usulan pembagian dari Buku_Kas <span class="sub" id="pUsN"></span></h3>
+    <div class="d">Uang SHU yang masuk atau keluar di Buku_Kas (kantong SHU Total) dan belum dialokasikan ke empat dana. SHU masuk dibagi otomatis <b id="pPersen"></b>. Baris lain (pemakaian atau uang masuk non-SHU) kamu pilihkan dananya; usulan dana hanya saran. Hanya baris yang dicentang yang disimpan.</div>
+    <div class="tw"><table><thead><tr><th></th><th class="l">Tanggal</th><th class="l">Keterangan Buku_Kas</th><th>Masuk</th><th>Keluar</th><th class="l">Dialokasikan ke</th></tr></thead><tbody id="pUs"></tbody></table></div>
+    <div class="bar"><button class="btn gold" id="pUsSave" disabled>Simpan yang dicentang</button><label class="sub"><input type="checkbox" id="pLebih"> izinkan saldo minus</label><label class="sub"><input type="checkbox" id="pGanda"> izinkan ganda</label><button class="tbtn" id="pRef">Muat ulang</button></div>
+    <div class="msg" id="pMsg"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Catat manual</h3>
+    <div class="d"><b>Pemakaian</b> mengurangi satu dana, <b>Pindah Dana</b> memindahkan saldo antar dana (total tetap), <b>Koreksi</b> memperbaiki salah catat (boleh negatif). Pemakaian uang SHU yang sebenarnya keluar tetap dicatat di Buku_Kas; baris itu nanti muncul di usulan di atas. Catat manual di sini hanya untuk yang tidak lewat Buku_Kas, mis. pindah dana atau koreksi.</div>
+    <div class="bf">
+      <div><label>Tanggal</label><input type="date" id="pTgl"></div>
+      <div><label>Jenis</label><select id="pJenis"><option>Pemakaian</option><option>Pindah Dana</option><option>Koreksi</option></select></div>
+      <div><label id="pDanaL">Dana</label><select id="pDana"></select></div>
+      <div id="pTujuWrap" style="display:none"><label>Ke dana</label><select id="pTuju"></select></div>
+      <div><label>Jumlah (Rp)</label><input type="text" id="pJml" inputmode="numeric" placeholder="1.000.000"></div>
+      <div class="c3"><label>Keterangan</label><input type="text" id="pKet" placeholder="mis. Tambahan biaya bahan / Pindah ke Next Goals"></div>
+    </div>
+    <div class="bar"><button class="btn gold" id="pAdd">Simpan</button><span class="sub" id="pInfo"></span></div>
+    <div class="msg" id="pMsg2"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="hd"><div><h3>Mutasi terbaru</h3><div class="d">30 baris terakhir menurut tanggal (tanpa saldo awal)</div></div></div>
+    <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Dana</th><th class="l">Jenis</th><th class="l">Keterangan</th><th>Masuk</th><th>Keluar</th></tr></thead><tbody id="pRec"></tbody></table></div>
   </div>
 </section>
 <footer id="foot">Tidak ada data tersimpan di halaman ini. Kunci hanya diingat di browser kamu.</footer>
@@ -521,7 +549,7 @@ $('#impBtn').onclick=async()=>{if(!SIM||!R)return;if(!confirm('Tulis '+SIM.baru+
 $('#clrBtn').onclick=()=>{WB={};NAMA={};R=null;SIM=null;$('#fi').value='';$('#files').innerHTML='';tampilFile();$('#hasil').style.display='none';$('#kpis').innerHTML='';$('#cek').innerHTML='';$('#ringkas').innerHTML='';$('#simOut').innerHTML='';$('#stat').textContent='';$('#pgw').style.display='none';$('#pg').style.width='0';$('#paksaW').style.display='none';$('#paksa').checked=false;$('#impBtn').disabled=true;$('#simBtn').disabled=true;window.scrollTo({top:0,behavior:'smooth'})};
 
 /* ===== Tab ===== */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya()});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='pb'&&!PB.dimuat)muatPB();if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya()});
 /* ===== Input Biaya ===== */
 const BK={kategori:['Operasional','Bahan Pokok','Bahan Pendukung','Iklan','Amal'],sub:{},metode:[],terbaru:[],bulan_ini:null,dimuat:false};
 const IKL=['Iklan TikTok','Iklan Shopee','Iklan Lazada','Iklan CPAS','Iklan IG Video','Iklan TikTok Video','Iklan KOL','Iklan Lain-lain'];
@@ -684,6 +712,49 @@ $('#hSave').onclick=async()=>{if(!HANT.length)return;$('#hSave').disabled=true;$
   catch(e){pesanH(e.message+(HANT.length?' · Daftar tetap ada, perbaiki lalu simpan lagi. Yang sudah tertulis tidak akan dobel.':''),false)}
   rHAnt()};
 rHAnt();
+
+/* ===== Pembagian SHU ===== */
+const PB={dimuat:false,d:null};
+const DANAP=['Dana Darurat','Dana Backup','Next Goals','Keuntungan'];
+function pesanP(t,ok,id){const m=$(id||'#pMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+async function muatPB(){try{const d=await jsonpB('pbg_input');if(d.error)throw new Error(d.error);PB.d=d;PB.dimuat=true;if(!$('#pTgl').value)$('#pTgl').value=hariIni();pbIsi();pbKpi();pbUs();pbRec()}catch(e){pesanP('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanPembagianSHU() sekali di editor Apps Script dulu.':''),false)}}
+function pbIsi(){const o=DANAP.map(x=>`<option>${x}</option>`).join('');$('#pDana').innerHTML=o;$('#pTuju').innerHTML=o;$('#pTuju').selectedIndex=2;const p=PB.d.persen||{};$('#pPersen').textContent=DANAP.map(x=>x+' '+(p[x]||0)+'%').join(' · ');pbJenis()}
+function pbJenis(){const j=$('#pJenis').value;$('#pTujuWrap').style.display=j==='Pindah Dana'?'':'none';$('#pDanaL').textContent=j==='Pindah Dana'?'Dari dana':'Dana';
+  $('#pInfo').textContent=j==='Koreksi'?'Jumlah positif menambah saldo dana, negatif mengurangi.':j==='Pindah Dana'?'Dua baris tercatat: keluar dari satu dana, masuk ke dana lain.':'Mengurangi saldo dana yang dipilih.'}
+function pbKpi(){const d=PB.d;if(!d)return;const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  $('#pKpi').innerHTML=d.dana.map(x=>kp(esc(x.dana),rp(x.saldo),x.persen+'% dari SHU baru')).join('')+kp('Belum dialokasikan',d.belum.n+' baris',d.belum.n?('masuk '+rp(d.belum.masuk)+' · keluar '+rp(d.belum.keluar)):'Total dana '+rp(d.total))}
+function pbUs(){const d=PB.d,U=d.usulan||[];$('#pUsN').textContent=U.length?'· '+U.length+' baris':'';
+  $('#pUs').innerHTML=U.length?U.map((u,i)=>{const sel=u.tipe==='bagi'?DANAP.map(x=>`${x.replace('Dana ','')} ${rp(u.bagi[x])}`).join(' · '):`<select data-i="${i}" class="pSel"><option value="">pilih dana…</option>${DANAP.map(x=>`<option${x===u.saran?' selected':''}>${x}</option>`).join('')}</select>`;
+    return `<tr><td><input type="checkbox" class="pCk" data-i="${i}" checked></td><td class="l">${esc(u.tgl)}</td><td class="l wrp">${esc(u.kat)}: ${esc(u.ket)}</td><td>${u.masuk?rp(u.masuk):''}</td><td>${u.keluar?rp(u.keluar):''}</td><td class="l wrp">${u.tipe==='bagi'?'<span class="sub">dibagi: </span>':''}${sel}</td></tr>`}).join(''):'<tr><td colspan="6" class="empty">Semua baris SHU sudah dialokasikan.</td></tr>';
+  document.querySelectorAll('.pCk,.pSel').forEach(e=>e.onchange=pbBtn);pbBtn()}
+function pbBtn(){const n=[...document.querySelectorAll('.pCk')].filter(c=>c.checked).length;$('#pUsSave').disabled=!n}
+function pbRows(){const U=PB.d.usulan,out=[];const ket=(u)=>(u.kat+': '+u.ket).slice(0,170);
+  for(const c of document.querySelectorAll('.pCk')){if(!c.checked)continue;const u=U[+c.dataset.i],ref='BK No '+u.no;
+    if(u.tipe==='bagi'){DANAP.forEach(x=>{if(u.bagi[x])out.push({tgl:u.tgl,dana:x,jenis:'Pembagian',masuk:u.bagi[x],keluar:0,ket:'Pembagian SHU: '+(u.ket||u.kat).slice(0,160),periode:'',ref})})}
+    else{const s=document.querySelector('.pSel[data-i="'+c.dataset.i+'"]');const dn=s&&s.value;if(!dn)throw new Error('Pilih dana untuk baris '+u.tgl+' · '+u.ket);
+      out.push(u.keluar>0?{tgl:u.tgl,dana:dn,jenis:'Pemakaian',masuk:0,keluar:u.keluar,ket:ket(u),periode:'',ref}:{tgl:u.tgl,dana:dn,jenis:'Koreksi',masuk:u.masuk,keluar:0,ket:ket(u),periode:'',ref})}}
+  return out}
+const pPost=(baris,dry)=>postOp({op:'pbg_catat',baris,dry:!!dry,izinkan_lebih:$('#pLebih').checked,izinkan_ganda:$('#pGanda').checked});
+$('#pUsSave').onclick=async()=>{$('#pUsSave').disabled=true;
+  try{const R=pbRows(),P=[];for(let i=0;i<R.length;i+=60)P.push(R.slice(i,i+60));
+    pesanP('Memeriksa…',true);for(const c of P)await pPost(c,true);
+    const tm=R.reduce((a,x)=>a+x.masuk,0),tk=R.reduce((a,x)=>a+x.keluar,0);
+    if(!confirm('Simpan '+R.length+' baris alokasi (masuk '+rp(tm)+', keluar '+rp(tk)+') ke Master 2?')){pesanP('Dibatalkan.',true);pbBtn();return}
+    let ok=0;for(const c of P){const r=await pPost(c,false);ok+=r.ditulis}
+    pesanP('Tersimpan '+ok+' baris. Tercatat di LOG_PERUBAHAN.',true);$('#pLebih').checked=false;$('#pGanda').checked=false;await muatPB()}
+  catch(e){pesanP(e.message,false);pbBtn()}};
+function pbRec(){const d=PB.d;$('#pRec').innerHTML=d.terbaru.length?d.terbaru.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.dana)}</td><td class="l">${esc(x.jenis)}</td><td class="l wrp">${esc(x.ket)}</td><td>${x.masuk?rp(x.masuk):''}</td><td>${x.keluar?rp(x.keluar):''}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada mutasi.</td></tr>'}
+$('#pJenis').onchange=pbJenis;$('#pRef').onclick=muatPB;
+$('#pAdd').onclick=async()=>{const j=$('#pJenis').value,tg=tglB($('#pTgl').value),jm=angkaB($('#pJml').value),ket=$('#pKet').value.trim(),dn=$('#pDana').value,tj=$('#pTuju').value;
+  const er=!tg?'Tanggal tidak valid':tg>hariIni()?'Tanggal tidak boleh di masa depan':isNaN(jm)||!jm?'Jumlah tidak valid':!ket?'Keterangan wajib diisi':(j==='Pindah Dana'&&dn===tj)?'Dana asal dan tujuan harus berbeda':(j!=='Koreksi'&&jm<0)?'Jumlah negatif hanya untuk Koreksi':'';
+  if(er){pesanP(er,false,'#pMsg2');return}
+  let R;if(j==='Pemakaian')R=[{tgl:tg,dana:dn,jenis:j,masuk:0,keluar:jm,ket,periode:'',ref:''}];
+  else if(j==='Pindah Dana')R=[{tgl:tg,dana:dn,jenis:j,masuk:0,keluar:jm,ket:ket+' (ke '+tj+')',periode:'',ref:''},{tgl:tg,dana:tj,jenis:j,masuk:jm,keluar:0,ket:ket+' (dari '+dn+')',periode:'',ref:''}];
+  else R=[{tgl:tg,dana:dn,jenis:j,masuk:jm,keluar:0,ket,periode:'',ref:''}];
+  $('#pAdd').disabled=true;
+  try{await pPost(R,true);if(!confirm('Simpan '+j+' '+rp(Math.abs(jm))+' ('+dn+(j==='Pindah Dana'?' → '+tj:'')+') ke Master 2?')){pesanP('Dibatalkan.',true,'#pMsg2');$('#pAdd').disabled=false;return}
+    await pPost(R,false);pesanP('Tersimpan. Tercatat di LOG_PERUBAHAN.',true,'#pMsg2');$('#pKet').value='';$('#pJml').value='';await muatPB()}
+  catch(e){pesanP(e.message,false,'#pMsg2')}$('#pAdd').disabled=false};
 </script>
 </body>
 </html>
