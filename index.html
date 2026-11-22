@@ -156,7 +156,7 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -261,6 +261,22 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
   <div class="card" style="margin-top:14px">
     <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">25 baris terakhir menurut tanggal</div></div></div>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Jenis</th><th class="l">Pihak</th><th class="l">Keterangan</th><th>Tambah</th><th>Bayar</th></tr></thead><tbody id="hRec"></tbody></table></div>
+  </div>
+</section>
+<section class="tab" id="t-kt">
+  <div class="card" style="margin-top:14px">
+    <h3>Tarik dari Catatan SHU ke Buku_Kas</h3>
+    <div class="d">Dana Siaga dan Investasi dibaca langsung dari spreadsheet Catatan SHU (spreadsheet itu tidak diubah sama sekali), lalu baris yang belum ada ditambahkan ke Buku_Kas di Master 2. Aman diulang: baris yang sama tidak ditulis dua kali. Baris lama yang teksnya kamu ubah di Catatan SHU hanya dilaporkan, tidak menimpa Buku_Kas.</div>
+    <div class="bar" style="flex-wrap:wrap;gap:14px">
+      <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="kDs" checked> Dana Siaga</label>
+      <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="kIv" checked> Investasi</label>
+      <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="kShu"> SHU Total (opsional)</label>
+      <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="kBny"> izinkan banyak (lebih dari 150 baris)</label>
+    </div>
+    <div class="sub" id="kShuNote" style="display:none;margin-top:6px">SHU Total dicentang: baris SHU baru ikut masuk ke Buku_Kas. Bila tidak dicentang, SHU baru belum terbaca Rekonsiliasi SHU Total dan usulan Pembagian SHU.</div>
+    <div class="bar"><button class="btn" id="kCek">Cek dulu</button><button class="btn gold" id="kRun" disabled>Tarik sekarang</button></div>
+    <div class="msg" id="kMsg"></div>
+    <div id="kOut" style="margin-top:10px"></div>
   </div>
 </section>
 <section class="tab" id="t-pb">
@@ -659,6 +675,24 @@ $('#sRun').onclick=async()=>{$('#sRun').disabled=true;$('#sCek').disabled=true;
 awalSink();
 rAnt();if($('#bTgl'))$('#bTgl').value=hariIni();
 
+/* ----- Tarik Catatan SHU ----- */
+function pesanK(t,ok){const m=$('#kMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+const kBody=dry=>({op:'kas_tarik',dry,izinkan_banyak:$('#kBny').checked,sumber:[$('#kDs').checked&&'Dana Siaga',$('#kIv').checked&&'Investasi',$('#kShu').checked&&'SHU Total'].filter(Boolean)});
+function rTarik(r){const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  let h='<div class="kpis">'+kp('Baris baru',r.baru,'akan ditulis ke Buku_Kas')+kp('Sudah ada',r.sudah,'dilewati')+kp('Teks diubah',r.jml_berubah||0,'dilaporkan, tidak ditulis')+kp('Tak ditemukan lagi',r.jml_tidak_ditemukan||0,'ada di Buku_Kas, tidak di Catatan SHU')+'</div>';
+  const pk=Object.keys(r.per_kantong||{});if(pk.length)h+='<div class="sub" style="margin-top:8px">'+pk.map(k=>esc(k)+': '+r.per_kantong[k].n+' baris, masuk '+rp(r.per_kantong[k].masuk)+', keluar '+rp(r.per_kantong[k].keluar)).join(' · ')+'</div>';
+  if((r.contoh||[]).length)h+=`<h4 style="margin:14px 0 6px;font-size:13px">Baris baru</h4><div class="tw" style="max-height:380px;overflow:auto"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kantong</th><th class="l">Kategori</th><th class="l">Keterangan</th><th>Masuk</th><th>Keluar</th></tr></thead><tbody>${r.contoh.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.kantong)}</td><td class="l">${esc(x.kat)}</td><td class="l">${esc(x.ket)}${x.cat?` <span class="sub">(${esc(x.cat)})</span>`:''}</td><td>${x.masuk?rp(x.masuk):''}</td><td>${x.keluar?rp(x.keluar):''}</td></tr>`).join('')}</tbody></table></div>`;
+  if((r.berubah||[]).length)h+=`<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">${r.jml_berubah} baris teksnya diubah di Catatan SHU (Buku_Kas tidak diubah)</summary><div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kantong</th><th class="l">Di Buku_Kas</th><th class="l">Di Catatan SHU</th><th>Jumlah</th></tr></thead><tbody>${r.berubah.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.kantong)}</td><td class="l">${esc(x.dulu)}</td><td class="l">${esc(x.kini)}</td><td>${rp(x.masuk||x.keluar)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  if((r.tidak_ditemukan||[]).length)h+=`<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">${r.jml_tidak_ditemukan} baris di Buku_Kas tidak ditemukan lagi di Catatan SHU (dihapus/diubah angkanya?)</summary><div class="tw"><table><thead><tr><th class="l">Kantong</th><th class="l">Keterangan</th><th>Masuk</th><th>Keluar</th><th>Jumlah baris</th></tr></thead><tbody>${r.tidak_ditemukan.map(x=>`<tr><td class="l">${esc(x.kantong)}</td><td class="l">${esc(x.ket)}</td><td>${x.masuk?rp(x.masuk):''}</td><td>${x.keluar?rp(x.keluar):''}</td><td>${x.jumlah}</td></tr>`).join('')}</tbody></table></div></details>`;
+  $('#kOut').innerHTML=h}
+$('#kShu').onchange=()=>{$('#kShuNote').style.display=$('#kShu').checked?'block':'none'};
+$('#kCek').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;pesanK('Membaca Catatan SHU…',true);
+  try{const b=kBody(true);if(!b.sumber.length)throw new Error('Centang minimal satu sumber');const r=await postOp(b);rTarik(r);$('#kRun').disabled=!r.baru;pesanK(r.baru?'Hasil pengecekan di bawah. Belum ada yang ditulis. Tekan Tarik sekarang bila sudah sesuai.':'Tidak ada baris baru: Buku_Kas sudah sama dengan Catatan SHU.',true)}
+  catch(e){$('#kOut').innerHTML='';pesanK(e.message,false)}$('#kCek').disabled=false};
+$('#kRun').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;
+  try{const c=await postOp(kBody(true));if(!confirm('Tulis '+c.baru+' baris baru ke Buku_Kas?')){pesanK('Dibatalkan.',true);$('#kRun').disabled=false;$('#kCek').disabled=false;return}
+    const r=await postOp(kBody(false));pesanK('Tersimpan '+r.ditulis+' baris. Tercatat di LOG_PERUBAHAN.',true);$('#kOut').innerHTML=''}
+  catch(e){pesanK(e.message,false);$('#kRun').disabled=false}$('#kCek').disabled=false};
 /* ===== Hutang & Piutang ===== */
 const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
 const HP={dimuat:false,d:null};let HANT=[];
