@@ -668,7 +668,7 @@ function hpPihak(){const d=HP.d,j=$('#hJenis').value;$('#dlPihak').innerHTML=((d
 function hpInfo(){const d=HP.d,j=$('#hJenis').value,p=$('#hPihak').value.trim(),el=$('#hSaldoInfo');if(!d||!p){el.textContent='';return}
   const k=j+'|'+p;const sa=d.saldo_pihak&&d.saldo_pihak[k];const pend=HANT.filter(x=>x.jenis===j&&x.pihak===p).reduce((a,x)=>a+(x.tambah||0)-(x.bayar||0),0);
   el.textContent=sa===undefined&&!pend?'Pihak baru di jenis ini.':'Saldo sekarang '+rp(sa||0)+(pend?' · setelah daftar di bawah '+rp((sa||0)+pend):'')}
-async function muatHP(){try{const d=await jsonpB('hp_input');if(d.error)throw new Error(d.error);HP.d=d;HP.dimuat=true;hpIsi();hKpi();hBuka();hRec()}catch(e){pesanH('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanHutangPiutang() sekali di editor Apps Script dulu.':''),false)}}
+async function muatHP(){if(!HP.dimuat)pesanH('Memuat data dari Master 2…',true);try{const d=await jsonpB('hp_input');if(d.error)throw new Error(d.error);HP.d=d;HP.dimuat=true;if(/^Memuat/.test($('#hMsg').textContent))$('#hMsg').className='msg';hpIsi();hKpi();hBuka();hRec()}catch(e){pesanH('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanHutangPiutang() sekali di editor Apps Script dulu.':''),false)}}
 function hKpi(){const d=HP.d;if(!d)return;const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
   $('#hKpi').innerHTML=JHP.map(j=>{const g=d.ringkas[j]||{total:0,n_buka:0,terlambat:0};return kp(j,rp(g.total),g.n_buka+' pihak terbuka'+(g.terlambat?' · '+g.terlambat+' lewat jatuh tempo':''))}).join('')}
 function hBuka(){const d=HP.d;if(!d)return;const L=d.buka||[];
@@ -717,7 +717,7 @@ rHAnt();
 const PB={dimuat:false,d:null};
 const DANAP=['Dana Darurat','Dana Backup','Next Goals','Keuntungan'];
 function pesanP(t,ok,id){const m=$(id||'#pMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
-async function muatPB(){try{const d=await jsonpB('pbg_input');if(d.error)throw new Error(d.error);PB.d=d;PB.dimuat=true;if(!$('#pTgl').value)$('#pTgl').value=hariIni();pbIsi();pbKpi();pbUs();pbRec()}catch(e){pesanP('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanPembagianSHU() sekali di editor Apps Script dulu.':''),false)}}
+async function muatPB(){if(!PB.dimuat)pesanP('Memuat data dari Master 2…',true);try{const d=await jsonpB('pbg_input');if(d.error)throw new Error(d.error);PB.d=d;PB.dimuat=true;if(/^Memuat/.test($('#pMsg').textContent))$('#pMsg').className='msg';if(!$('#pTgl').value)$('#pTgl').value=hariIni();pbIsi();pbKpi();pbUs();pbRec()}catch(e){pesanP('Gagal memuat: '+e.message+(/Tab tidak ditemukan/.test(e.message)?' · Jalankan siapkanPembagianSHU() sekali di editor Apps Script dulu.':''),false)}}
 function pbIsi(){const o=DANAP.map(x=>`<option>${x}</option>`).join('');$('#pDana').innerHTML=o;$('#pTuju').innerHTML=o;$('#pTuju').selectedIndex=2;const p=PB.d.persen||{};$('#pPersen').textContent=DANAP.map(x=>x+' '+(p[x]||0)+'%').join(' · ');pbJenis()}
 function pbJenis(){const j=$('#pJenis').value;$('#pTujuWrap').style.display=j==='Pindah Dana'?'':'none';$('#pDanaL').textContent=j==='Pindah Dana'?'Dari dana':'Dana';
   $('#pInfo').textContent=j==='Koreksi'?'Jumlah positif menambah saldo dana, negatif mengurangi.':j==='Pindah Dana'?'Dua baris tercatat: keluar dari satu dana, masuk ke dana lain.':'Mengurangi saldo dana yang dipilih.'}
