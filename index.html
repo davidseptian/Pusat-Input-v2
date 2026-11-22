@@ -182,9 +182,21 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
 </section>
 <section class="tab" id="t-bi">
   <div class="kpis" id="bKpi"></div>
+  <div class="card" style="margin-top:14px" id="sinkCard">
+    <h3>Sinkron dari PENGELUARAN 2026</h3>
+    <div class="d">Bahan Pokok, Bahan Pendukung, dan Iklan dibaca langsung dari spreadsheet PENGELUARAN 2026 (spreadsheet itu tidak diubah sama sekali). Operasional dan Amal tetap diinput manual di bawah. Aman diulang: baris yang sama tidak ditulis dua kali. Baris yang diubah atau dihapus di PENGELUARAN 2026 setelah tersinkron dibalik otomatis dengan baris "Koreksi otomatis".</div>
+    <div class="bf">
+      <div><label>Dari tanggal</label><input type="date" id="sDari" min="2026-11-01"></div>
+      <div><label>Sampai tanggal</label><input type="date" id="sSmp"></div>
+      <div class="c2"><label>&nbsp;</label><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sKor" checked> koreksi otomatis bila baris di PENGELUARAN 2026 berubah</label></div>
+    </div>
+    <div class="bar"><button class="btn" id="sCek">Cek dulu</button><button class="btn gold" id="sRun" disabled>Sinkron sekarang</button><span class="sub">Bulan sebelum November 2026 sudah diimpor satu kali, jadi sinkron mulai 1 November 2026.</span></div>
+    <div class="msg" id="sMsg"></div>
+    <div id="sOut" style="margin-top:10px"></div>
+  </div>
   <div class="card" style="margin-top:14px">
     <h3>Catat biaya</h3>
-    <div class="d">Isi satu biaya, tekan Tambah ke daftar, ulangi sesuai kebutuhan, lalu Simpan semua. Data masuk ke tab Biaya_Operasional di Master 2 dan langsung terbaca dashboard Keuangan dan Penjualan.</div>
+    <div class="d">Isi satu biaya, tekan Tambah ke daftar, ulangi sesuai kebutuhan, lalu Simpan semua. Data masuk ke tab Biaya_Operasional di Master 2 dan langsung terbaca dashboard Keuangan dan Penjualan. Untuk Bahan Pokok, Bahan Pendukung, dan Iklan, pakai Sinkron di atas supaya tidak tercatat dua kali; form ini terutama untuk Operasional dan Amal.</div>
     <div class="bf">
       <div><label>Tanggal</label><input type="date" id="bTgl"></div>
       <div><label>Kategori</label><select id="bKat"></select></div>
@@ -201,8 +213,9 @@ textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-siz
     <h3>Daftar yang akan disimpan <span class="sub" id="bAntN"></span></h3>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kategori</th><th class="l">Sub-kategori</th><th class="l">Keterangan</th><th>Jumlah</th><th></th></tr></thead><tbody id="bAnt"></tbody></table></div>
     <div class="bar"><button class="btn gold" id="bSave" disabled>Simpan semua</button><button class="btn" id="bClr" disabled>Kosongkan daftar</button><label class="sub"><input type="checkbox" id="bGanda"> izinkan ganda (beli dua kali yang sama persis)</label></div>
-    <details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Tempel banyak baris dari Excel atau Google Sheets</summary>
-      <div class="d" style="margin-top:8px">Urutan kolom: Tanggal, Kategori, Sub_Kategori, Keterangan, Jumlah, Metode_Bayar (kolom terakhir boleh kosong). Tanggal boleh yyyy-mm-dd atau dd/mm/yyyy.</div>
+    <details style="margin-top:6px" open><summary class="sub" style="cursor:pointer">Input banyak baris sekaligus (file CSV atau tempel dari Excel / Google Sheets)</summary>
+      <div class="d" style="margin-top:8px">Urutan kolom: Tanggal, Kategori, Sub_Kategori, Keterangan, Jumlah, Metode_Bayar (kolom terakhir boleh kosong). Tanggal boleh yyyy-mm-dd atau dd/mm/yyyy. Pemisah kolom (koma, titik koma, atau tab) dikenali otomatis. Semua baris diperiksa dulu; satu baris salah tidak membuat yang lain tersimpan sebagian.</div>
+      <div class="bar"><button class="btn" id="bTpl">Unduh template CSV</button><button class="btn" id="bCsv">Pilih file CSV…</button><input type="file" id="bCsvIn" accept=".csv,.txt,text/csv" style="display:none"></div>
       <textarea class="paste" id="bPaste" style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px"></textarea>
       <div class="bar"><button class="btn" id="bPasteBtn">Masukkan ke daftar</button></div>
     </details>
@@ -522,11 +535,30 @@ $('#bAdd').onclick=()=>{const x={tgl:tglB($('#bTgl').value),kat:$('#bKat').value
   if(x.kat!=='Iklan'&&!x.sub)x.sub='Lainnya';const e=cekBaris(x);if(e){pesanB(e,false);return}
   ANT.push(x);$('#bMsg').className='msg';$('#bKet').value='';$('#bJml').value='';$('#bBukti').value='';rAnt();$('#bKet').focus()};
 $('#bClr').onclick=()=>{ANT=[];rAnt()};
-$('#bPasteBtn').onclick=()=>{const L=$('#bPaste').value.split(/\r?\n/).filter(l=>l.trim());if(!L.length)return;const gal=[];let n=0;
-  L.forEach((l,i)=>{const c=l.split('\t');if(i===0&&/^tanggal$/i.test((c[0]||'').trim()))return;
+function parseTabel(t){t=String(t||'').replace(/^\uFEFF/,'');const L=t.split(/\r?\n/).find(l=>l.trim())||'';
+  const nt=(L.match(/\t/g)||[]).length,ns=(L.match(/;/g)||[]).length,nk=(L.match(/,/g)||[]).length;const d=nt?'\t':(ns>=nk&&ns>0?';':',');
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===d){row.push(f);f=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}
+  if(f!==''||row.length){row.push(f);rows.push(row)}
+  return rows.filter(r=>r.some(x=>String(x).trim()))}
+function masukTabel(rows){if(!rows.length){pesanB('Tidak ada baris yang terbaca.',false);return false}const gal=[];let n=0;
+  rows.forEach((c,i)=>{if(i===0&&/^tanggal$/i.test((c[0]||'').trim()))return;
     const x={tgl:tglB(c[0]),kat:katOk(c[1]),sub:(c[2]||'').trim(),ket:(c[3]||'').trim(),jml:angkaB(c[4]),metode:(c[5]||'').trim(),bukti:''};if(x.kat&&x.kat!=='Iklan'&&!x.sub)x.sub='Lainnya';
     const e=cekBaris(x);if(e)gal.push('Baris '+(i+1)+': '+e);else{ANT.push(x);n++}});
-  rAnt();if(gal.length)pesanB(n+' baris masuk. Ditolak: '+gal.slice(0,6).join(' | ')+(gal.length>6?' …':''),false);else pesanB(n+' baris masuk ke daftar.',true);if(!gal.length)$('#bPaste').value=''};
+  rAnt();if(gal.length)pesanB(n+' baris masuk ke daftar. Ditolak '+gal.length+': '+gal.slice(0,6).join(' | ')+(gal.length>6?' …':'')+' · Perbaiki di file lalu unggah ulang baris yang ditolak.',false);
+  else pesanB(n+' baris masuk ke daftar. Periksa dulu, lalu tekan Simpan semua.',true);return !gal.length}
+$('#bPasteBtn').onclick=()=>{if(masukTabel(parseTabel($('#bPaste').value)))$('#bPaste').value=''};
+$('#bCsv').onclick=()=>$('#bCsvIn').click();
+$('#bCsvIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{masukTabel(parseTabel(r.result));$('#bCsvIn').value=''};r.onerror=()=>pesanB('File tidak bisa dibaca.',false);r.readAsText(f,'utf-8')};
+$('#bTpl').onclick=()=>{const T0=hariIni();const c=['Tanggal,Kategori,Sub_Kategori,Keterangan,Jumlah,Metode_Bayar',
+  T0+',Operasional,"Rekap bulanan (gaji, sewa, listrik, dll)",CONTOH hapus baris ini: Biaya Ops Actual November,19850000,Transfer',
+  T0+',Amal,Rekap bulanan,CONTOH hapus baris ini: Biaya Amal November,2000000,Transfer',
+  T0+',Bahan Pokok,Botol,CONTOH hapus baris ini: botol spray 100ml 200 pcs,304000,Cash',
+  T0+',Iklan,Iklan Shopee,CONTOH hapus baris ini: Shopee ads November,12000000,Saldo iklan'].join('\r\n')+'\r\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+c],{type:'text/csv;charset=utf-8'}));a.download='Template-Input-Biaya.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
 async function bpost(baris,dry){const pic=$('#pic').value;if(!pic)throw new Error('Pilih PIC di kanan atas dulu');const u=$('#apiUrl').value.trim(),k=$('#apiKey').value;if(!u||!k)throw new Error('Belum terhubung: isi Sumber data');
   const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:k,op:'biaya_tambah',pic,baris,dry:!!dry,izinkan_ganda:$('#bGanda').checked})});const j=await r.json();if(j.error)throw new Error(j.error);return j}
 $('#bSave').onclick=async()=>{if(!ANT.length)return;$('#bSave').disabled=true;$('#bClr').disabled=true;
@@ -537,6 +569,28 @@ $('#bSave').onclick=async()=>{if(!ANT.length)return;$('#bSave').disabled=true;$(
     pesanB('Tersimpan '+ok+' baris, total '+rp(t)+'. Tercatat di LOG_PERUBAHAN.',true);$('#bGanda').checked=false;await muatBiaya()}
   catch(e){pesanB(e.message+(ANT.length?' · Daftar tetap ada, perbaiki lalu simpan lagi. Yang sudah tertulis tidak akan dobel.':''),false)}
   rAnt()};
+/* ----- Sinkron PENGELUARAN 2026 ----- */
+function pesanS(t,ok){const m=$('#sMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+async function postOp(body){const pic=$('#pic').value;if(!pic)throw new Error('Pilih PIC di kanan atas dulu');const u=$('#apiUrl').value.trim(),k=$('#apiKey').value;if(!u||!k)throw new Error('Belum terhubung: isi Sumber data');
+  const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key:k,pic},body))});const j=await r.json();if(j.error)throw new Error(j.error);return j}
+const sBody=dry=>({op:'biaya_sinkron',dry,dari:$('#sDari').value,sampai:$('#sSmp').value,koreksi:$('#sKor').checked});
+function tblS(L,judul){if(!L.length)return '';return `<h4 style="margin:14px 0 6px;font-size:13px">${judul}</h4><div class="tw" style="max-height:440px;overflow:auto"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kategori</th><th class="l">Sub-kategori</th><th class="l">Keterangan</th><th>Jumlah</th></tr></thead><tbody>${L.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.kat)}</td><td class="l">${esc(x.sub)}</td><td class="l wrp">${esc(x.ket||'(tanpa keterangan)')}</td><td>${rp(x.jml)}</td></tr>`).join('')}</tbody></table></div>`}
+function rSink(r){const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  const kt=Object.keys(r.per_kategori||{});
+  let h='<div class="kpis">'+kp('Baris baru',r.baru,'akan ditulis ke Biaya_Operasional')+kp('Sudah ada',r.sudah,'dilewati, tidak ditulis ulang')+kp('Koreksi otomatis',r.koreksi,'baris berubah/dihapus di PENGELUARAN 2026')+kp('Total',rp(r.total),r.dari+' s/d '+r.sampai)+'</div>';
+  if(kt.length)h+='<div class="sub" style="margin-top:8px">'+kt.map(k=>esc(k)+' '+rp(r.per_kategori[k])).join(' · ')+'</div>';
+  h+=tblS(r.contoh||[],'Baris baru'+(r.baru>(r.contoh||[]).length?' (300 pertama)':''))+tblS(r.contoh_koreksi||[],'Koreksi otomatis');
+  if((r.diabaikan||[]).length)h+=`<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">${r.diabaikan.length} baris uang masuk diabaikan (bukan pengeluaran)</summary><div class="tw"><table><thead><tr><th class="l">Lembar</th><th class="l">Keterangan</th><th>Jumlah</th></tr></thead><tbody>${r.diabaikan.map(x=>`<tr><td class="l">${esc(x.bulan)} baris ${x.baris}</td><td class="l">${esc(x.ket)}</td><td>${rp(x.jml)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  $('#sOut').innerHTML=h}
+function awalSink(){const t=hariIni();$('#sSmp').value=t;const a=t.slice(0,8)+'01';$('#sDari').value=a<'2026-11-01'?'2026-11-01':a}
+$('#sCek').onclick=async()=>{$('#sRun').disabled=true;$('#sCek').disabled=true;pesanS('Membaca PENGELUARAN 2026…',true);
+  try{const r=await postOp(sBody(true));rSink(r);const ada=r.baru+r.koreksi>0;$('#sRun').disabled=!ada;pesanS(ada?'Hasil pengecekan di bawah. Belum ada yang ditulis. Tekan Sinkron sekarang bila sudah sesuai.':'Tidak ada yang perlu disinkron: semuanya sudah ada di Master 2.',true)}
+  catch(e){$('#sOut').innerHTML='';pesanS(e.message,false)}$('#sCek').disabled=false};
+$('#sRun').onclick=async()=>{$('#sRun').disabled=true;$('#sCek').disabled=true;
+  try{const c=await postOp(sBody(true));if(!confirm('Tulis '+c.baru+' baris baru'+(c.koreksi?' dan '+c.koreksi+' koreksi otomatis':'')+', total '+rp(c.total)+', ke Master 2?')){pesanS('Dibatalkan.',true);$('#sRun').disabled=false;$('#sCek').disabled=false;return}
+    const r=await postOp(sBody(false));pesanS('Tersimpan '+r.ditulis+' baris, total '+rp(r.total)+'. Tercatat di LOG_PERUBAHAN.',true);$('#sOut').innerHTML='';await muatBiaya()}
+  catch(e){pesanS(e.message,false);$('#sRun').disabled=false}$('#sCek').disabled=false};
+awalSink();
 rAnt();if($('#bTgl'))$('#bTgl').value=hariIni();
 </script>
 </body>
