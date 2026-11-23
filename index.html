@@ -134,6 +134,9 @@ nav.tabs{margin-top:16px}
 td.l,th.l{text-align:left}td.wrp{white-space:normal;min-width:180px}
 .x{cursor:pointer;color:var(--bad);background:none;border:0;font-size:14px}
 textarea.paste{min-height:90px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.oft input{width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;font-size:13px}
+.oft td{padding:5px 6px;vertical-align:middle}.oft td.sk{font-size:12px;color:var(--muted);white-space:nowrap}.oft td.sk.er{color:#ff8a8a}.oft td.os{text-align:right;white-space:nowrap}
+#oNo{opacity:.75}
 </style>
 <script>
 /* Kunci rahasia: default hanya untuk sesi tab ini; tersimpan di perangkat bila "Ingat di perangkat ini" dicentang */
@@ -152,7 +155,7 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
 <header>
   <div>
     <div class="brand">Hypotech · Pusat Input v2</div>
-    <div class="sub">Satu tempat untuk semua data masuk ke Master 2: unggah ekspor marketplace dan catat biaya · file dibaca di browser ini, tidak diunggah ke server lain</div>
+    <div class="sub">Satu tempat untuk semua data masuk ke Master 2: unggah ekspor marketplace, catat biaya, dan input penjualan offline · file dibaca di browser ini, tidak diunggah ke server lain</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <label class="sub">PIC</label><select id="pic"><option value="">Pilih PIC</option><option>Dimas</option><option>David</option></select>
@@ -167,7 +170,7 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="of">Penjualan Offline</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -234,6 +237,33 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
   <div class="card" style="margin-top:14px">
     <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">40 baris terakhir menurut tanggal</div></div><div><select id="bFil"><option value="">Semua kategori</option></select> <button class="tbtn" id="bRef">Muat ulang</button></div></div>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Kategori</th><th class="l">Sub-kategori</th><th class="l">Keterangan</th><th>Jumlah</th><th class="l">Dicatat oleh</th></tr></thead><tbody id="bRec"></tbody></table></div>
+  </div>
+</section>
+<section class="tab" id="t-of">
+  <div class="kpis" id="oKpi"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Input penjualan offline</h3>
+    <div class="d">Satu pesanan per simpan. Data masuk ke Orders dan Order_Lines di Master 2 dan langsung terbaca dashboard Penjualan dan Keuangan. Nomor transaksi dibuat otomatis (OFFbulan-urut). Pembeli member atau pelanggan CRM yang perlu poin dan insentif admin: input lewat CRM v2, tombol Closing.</div>
+    <div class="bf">
+      <div><label>Tanggal pesanan</label><input type="date" id="oTgl"></div>
+      <div><label>Nomor transaksi</label><input type="text" id="oNo" value="Otomatis" readonly></div>
+      <div class="c2"><label>Channel</label><select id="oCh"><option value="OFFLINE STORE">OFFLINE STORE (penjualan offline)</option><option value="OFFLINE PROJECT">OFFLINE PROJECT (B2B, reseller, white label)</option></select></div>
+      <div class="c2"><label>Nama pembeli (opsional)</label><input type="text" id="oNama" placeholder="kosong = Pembeli offline" maxlength="60"></div>
+      <div><label>Ongkir (Rp, opsional)</label><input type="text" id="oOng" inputmode="numeric" placeholder="0"></div>
+      <div class="c3"><label>Keterangan (opsional)</label><input type="text" id="oKet" placeholder="mis. bazaar kampus, transfer BCA" maxlength="160"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="hd"><div><h3>Produk / item</h3><div class="d">Ketik kode SKU atau nama produk, pilih dari daftar. Harga satuan terisi dari HPP Sistem Otomatis dan boleh diubah.</div></div><div><button class="tbtn" id="oAdd" type="button">+ Tambah item</button> <button class="tbtn" id="oClr" type="button">Kosongkan</button></div></div>
+    <datalist id="dlOf"></datalist>
+    <div class="tw"><table class="oft"><thead><tr><th class="l" style="width:36%">Produk</th><th class="l">SKU</th><th style="width:70px">Qty</th><th style="width:130px">Harga satuan</th><th style="width:110px">Diskon</th><th style="width:120px">Subtotal</th><th></th></tr></thead><tbody id="oRows"></tbody></table></div>
+    <div class="kpis" id="oTot" style="margin-top:12px"></div>
+    <div class="bar"><button class="btn" id="oCek" type="button">Cek dulu</button><button class="btn gold" id="oSave" type="button">Simpan ke Orders</button><button class="btn" id="oReset" type="button">Reset</button><label class="sub"><input type="checkbox" id="oGanda"> izinkan ganda (dua transaksi yang sama persis)</label></div>
+    <div class="msg" id="oMsg"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="hd"><div><h3>Penjualan offline terbaru</h3><div class="d">15 pesanan terakhir di Master 2 (hasil input di sini dan rekap bulanan lama)</div></div><div><button class="tbtn" id="oRef" type="button">Muat ulang</button></div></div>
+    <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Nomor</th><th class="l">Channel</th><th class="l">Pembeli</th><th>Omzet</th><th class="l">Keterangan</th></tr></thead><tbody id="oRec"></tbody></table></div>
   </div>
 </section>
 <section class="tab" id="t-hp">
@@ -587,7 +617,7 @@ $('#impBtn').onclick=async()=>{if(!SIM||!R)return;if(!confirm('Tulis '+SIM.baru+
 $('#clrBtn').onclick=()=>{WB={};NAMA={};R=null;SIM=null;$('#fi').value='';$('#files').innerHTML='';tampilFile();$('#hasil').style.display='none';$('#kpis').innerHTML='';$('#cek').innerHTML='';$('#ringkas').innerHTML='';$('#simOut').innerHTML='';$('#stat').textContent='';$('#pgw').style.display='none';$('#pg').style.width='0';$('#paksaW').style.display='none';$('#paksa').checked=false;$('#impBtn').disabled=true;$('#simBtn').disabled=true;window.scrollTo({top:0,behavior:'smooth'})};
 
 /* ===== Tab ===== */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='pb'&&!PB.dimuat)muatPB();if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya()});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='pb'&&!PB.dimuat)muatPB();if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya();if(b.dataset.t==='of'&&!OF.dimuat)muatOf()});
 /* ===== Input Biaya ===== */
 const BK={kategori:['Operasional','Bahan Pokok','Bahan Pendukung','Iklan','Amal'],sub:{},metode:[],terbaru:[],bulan_ini:null,dimuat:false};
 const IKL=['Iklan TikTok','Iklan Shopee','Iklan Lazada','Iklan CPAS','Iklan IG Video','Iklan TikTok Video','Iklan KOL','Iklan Lain-lain'];
@@ -854,6 +884,52 @@ $('#pAdd').onclick=async()=>{const j=$('#pJenis').value,tg=tglB($('#pTgl').value
   try{await pPost(R,true);if(!confirm('Simpan '+j+' '+rp(Math.abs(jm))+' ('+dn+(j==='Pindah Dana'?' → '+tj:'')+') ke Master 2?')){pesanP('Dibatalkan.',true,'#pMsg2');$('#pAdd').disabled=false;return}
     await pPost(R,false);pesanP('Tersimpan. Tercatat di LOG_PERUBAHAN.',true,'#pMsg2');$('#pKet').value='';$('#pJml').value='';await muatPB()}
   catch(e){pesanP(e.message,false,'#pMsg2')}$('#pAdd').disabled=false};
+
+/* ===== Penjualan Offline ===== */
+const OF={d:null,dimuat:false,items:[],req:'',peta:{}};
+const ofReq=()=>'OF'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function pesanO(t,ok){const m=$('#oMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+function ofSku(txt){const s=String(txt||'').trim();if(!s)return '';const m=s.match(/^(HS[A-Z0-9]{8})\b/i),id=m?m[1].toUpperCase():'';if(id&&OF.peta[id])return id;const l=s.toLowerCase(),c=Object.keys(OF.peta).filter(k=>OF.peta[k].nama.toLowerCase()===l);return c.length===1?c[0]:''}
+function ofHitung(){let tot=0,qt=0,ok=true;
+  OF.items.forEach(it=>{const q=angkaB(it.qty),h=angkaB(it.harga),d=it.diskon===''?0:angkaB(it.diskon);const v=Number.isFinite(q)&&Number.isFinite(h)&&Number.isFinite(d)?q*h-d:NaN;it.sub=v;if(it.tr)it.tr.querySelector('.os').textContent=Number.isFinite(v)?rp(v):'—';if(Number.isFinite(v)){tot+=v;qt+=q}else if(it.sku||it.q)ok=false});
+  const ong=$('#oOng').value.trim()===''?0:angkaB($('#oOng').value),o=Number.isFinite(ong)?ong:0;
+  const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  $('#oTot').innerHTML=kp('Sub total produk',rp(tot),qt+' pcs · '+OF.items.filter(i=>i.sku).length+' produk')+kp('Ongkir',rp(o),'ditambahkan ke total bayar')+kp('Total bayar pembeli',rp(tot+o),'omzet tercatat '+rp(tot));
+  return {tot,qt,ok}}
+function ofBaris(it){const tr=document.createElement('tr');it.tr=tr;
+  tr.innerHTML='<td class="l"><input type="text" class="op" list="dlOf" placeholder="Ketik kode atau nama produk" autocomplete="off"></td><td class="l sk"></td><td><input type="text" class="oq" inputmode="numeric"></td><td><input type="text" class="oh" inputmode="numeric" placeholder="harga satuan"></td><td><input type="text" class="od" inputmode="numeric" placeholder="0"></td><td class="os">—</td><td><button class="tbtn ox" type="button">Hapus</button></td>';
+  const op=tr.querySelector('.op'),oq=tr.querySelector('.oq'),oh=tr.querySelector('.oh'),od=tr.querySelector('.od'),sk=tr.querySelector('.sk');
+  op.value=it.q;oq.value=it.qty;oh.value=it.harga;od.value=it.diskon;sk.textContent=it.sku||'';
+  op.oninput=()=>{it.q=op.value;const id=ofSku(op.value);it.sku=id;sk.textContent=id||(op.value.trim()?'tidak dikenal':'');sk.classList.toggle('er',!id&&!!op.value.trim());
+    if(id){const h=OF.peta[id].hj;if(h&&(it.auto||!oh.value.trim())){oh.value=String(h);it.harga=String(h);it.auto=true}}ofHitung()};
+  oq.oninput=()=>{it.qty=oq.value;ofHitung()};oh.oninput=()=>{it.harga=oh.value;it.auto=false;ofHitung()};od.oninput=()=>{it.diskon=od.value;ofHitung()};
+  tr.querySelector('.ox').onclick=()=>{OF.items=OF.items.filter(x=>x!==it);if(!OF.items.length)ofTambah();else ofGambar()};
+  return tr}
+function ofGambar(){const tb=$('#oRows');tb.innerHTML='';OF.items.forEach(it=>tb.appendChild(ofBaris(it)));ofHitung()}
+function ofTambah(){OF.items.push({q:'',sku:'',qty:'1',harga:'',diskon:'',auto:true});ofGambar();const r=document.querySelectorAll('#oRows .op');if(r.length)r[r.length-1].focus()}
+function ofBersih(){OF.items=[];OF.req=ofReq();$('#oNo').value='Otomatis';$('#oNama').value='';$('#oOng').value='';$('#oKet').value='';$('#oGanda').checked=false;ofTambah()}
+function ofBody(dry){
+  if(!$('#oTgl').value)throw new Error('Isi tanggal pesanan');
+  const used=OF.items.filter(i=>i.q.trim()||i.harga.trim()||i.diskon.trim());if(!used.length)throw new Error('Isi minimal satu produk');
+  const items=used.map((it,i)=>{const no='Produk '+(i+1)+': ';if(!it.sku)throw new Error(no+'produk belum dipilih dari daftar');
+    const q=angkaB(it.qty),h=angkaB(it.harga),d=it.diskon.trim()===''?0:angkaB(it.diskon);
+    if(!Number.isInteger(q)||q<1)throw new Error(no+'qty harus bilangan bulat minimal 1');if(!Number.isFinite(h)||h<0)throw new Error(no+'harga satuan belum valid');if(!Number.isFinite(d)||d<0)throw new Error(no+'diskon tidak valid');
+    if(q*h-d<=0)throw new Error(no+'subtotal harus lebih dari 0');return {sku:it.sku,qty:q,harga:h,diskon:d}});
+  const ong=$('#oOng').value.trim()===''?0:angkaB($('#oOng').value);if(!Number.isFinite(ong)||ong<0)throw new Error('Ongkir belum valid');
+  if(!OF.req)OF.req=ofReq();
+  return {op:'offline_tambah',dry:!!dry,req:OF.req,tanggal:$('#oTgl').value,channel:$('#oCh').value,nama:$('#oNama').value.trim(),ongkir:ong,keterangan:$('#oKet').value.trim(),items,izinkan_ganda:$('#oGanda').checked}}
+async function ofKirim(body){try{return await postOp(body)}catch(e){if(/Failed to fetch|NetworkError|Load failed/i.test(String(e&&e.message||e))){await new Promise(r=>setTimeout(r,1800));const r=await postOp(body);r._ulang=true;return r}throw e}}
+function rOfRec(){const L=(OF.d&&OF.d.terakhir)||[];$('#oRec').innerHTML=L.length?L.map(x=>`<tr><td class="l">${esc(x.tgl)}</td><td class="l">${esc(x.id)}</td><td class="l">${esc(x.channel)}</td><td class="l">${esc(x.nama)}</td><td>${rp(x.omzet)}</td><td class="l wrp">${esc(x.ket)}</td></tr>`).join(''):'<tr><td class="l" colspan="6">Belum ada data.</td></tr>';
+  const b=(OF.d&&OF.d.bulan_ini)||{n:0,omzet:0};$('#oKpi').innerHTML=`<div class="kpi"><div class="l">Penjualan offline bulan ini</div><div class="v">${rp(b.omzet)}</div><div class="n">${b.n} pesanan di Master 2</div></div>`}
+async function muatOf(){try{const d=await jsonpB('offline_input');if(d.error)throw new Error(d.error);OF.d=d;OF.dimuat=true;OF.peta={};(d.sku||[]).forEach(s=>{OF.peta[s.sku]=s});
+    $('#dlOf').innerHTML=(d.sku||[]).filter(s=>s.aktif!==false).map(s=>`<option value="${esc(s.sku+' · '+s.nama)}"></option>`).join('');rOfRec();
+    if(d.galat)pesanO(d.galat,false);else if(/^Memuat/.test($('#oMsg').textContent))pesanO('',true)}catch(e){pesanO('Gagal memuat daftar produk: '+e.message,false)}}
+$('#oAdd').onclick=ofTambah;$('#oClr').onclick=()=>{OF.items=[];ofTambah()};$('#oReset').onclick=()=>{ofBersih();pesanO('',true)};$('#oRef').onclick=muatOf;$('#oOng').oninput=ofHitung;
+$('#oCek').onclick=async()=>{try{const r=await ofKirim(ofBody(true));$('#oNo').value=r.order_id+(r.sudah_ada?' (sudah tercatat)':'');pesanO(r.sudah_ada?'Pesanan ini sudah tercatat sebagai '+r.order_id+'. Tidak akan ditulis dua kali.':'Siap disimpan: '+r.order_id+' · '+r.baris+' produk · '+r.qty+' pcs · omzet '+rp(r.omzet)+'. Belum ada yang ditulis.',true)}catch(e){pesanO(e.message,false)}};
+$('#oSave').onclick=async()=>{$('#oSave').disabled=true;try{const r=await ofKirim(ofBody(false));
+    pesanO((r.sudah_ada?'Sudah tercatat sebelumnya: ':'Tersimpan: ')+r.order_id+' · '+r.baris+' produk · '+r.qty+' pcs · omzet '+rp(r.omzet)+'. '+(r.log_galat?'Data masuk, tetapi LOG_PERUBAHAN gagal ditulis: catat manual. ':'Tercatat di LOG_PERUBAHAN. ')+(r._ulang?'(Jawaban server terlambat, dicek ulang otomatis; data tidak dobel.)':''),true);
+    const msg=$('#oMsg').textContent;ofBersih();pesanO(msg,true);await muatOf()}catch(e){pesanO(e.message,false)}finally{$('#oSave').disabled=false}};
+(function(){$('#oTgl').value=hariIni();$('#oTgl').max=hariIni();OF.req=ofReq();ofTambah()})();
 </script>
 </body>
 </html>
