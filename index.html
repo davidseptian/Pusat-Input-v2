@@ -155,7 +155,7 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
 <header>
   <div>
     <div class="brand">Hypotech · Pusat Input v2</div>
-    <div class="sub">Satu tempat untuk semua data masuk ke Master 2: unggah ekspor marketplace, catat biaya, dan input penjualan offline · file dibaca di browser ini, tidak diunggah ke server lain</div>
+    <div class="sub">Satu tempat untuk semua data masuk ke Master 2: unggah ekspor marketplace, catat biaya, input penjualan offline, dan sinkron retur · file dibaca di browser ini, tidak diunggah ke server lain</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <label class="sub">PIC</label><select id="pic"><option value="">Pilih PIC</option><option>Dimas</option><option>David</option></select>
@@ -170,7 +170,7 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="of">Penjualan Offline</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="of">Penjualan Offline</button><button data-t="rt">Retur</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -302,6 +302,21 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
   <div class="card" style="margin-top:14px">
     <div class="hd"><div><h3>Catatan terbaru di Master 2</h3><div class="d">25 baris terakhir menurut tanggal</div></div></div>
     <div class="tw"><table><thead><tr><th class="l">Tanggal</th><th class="l">Jenis</th><th class="l">Pihak</th><th class="l">Keterangan</th><th>Tambah</th><th>Bayar</th></tr></thead><tbody id="hRec"></tbody></table></div>
+  </div>
+</section>
+<section class="tab" id="t-rt">
+  <div class="card" style="margin-top:14px">
+    <h3>Sinkron Retur dari REPORT RETUR MP</h3>
+    <div class="d">Data retur dibaca langsung dari spreadsheet REPORT RETUR MP (spreadsheet itu tidak diubah sama sekali) lalu disimpan ke tab Retur di Master 2. Aman diulang: baris yang sama tidak ditulis dua kali, baris yang berubah diperbarui di tempat, dan baris yang hilang dari sumber hanya ditandai. Orders, omzet, dan stok tidak disentuh.</div>
+    <div class="bar" style="flex-wrap:wrap;gap:14px"><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="rBny"> izinkan banyak (bila sumber jauh berkurang)</label></div>
+    <div class="bar"><button class="btn" id="rCek">Cek dulu</button><button class="btn gold" id="rRun" disabled>Sinkron sekarang</button><button class="btn" id="rMuat">Muat ulang</button></div>
+    <div class="msg" id="rMsg"></div>
+    <div id="rOut" style="margin-top:10px"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Retur di Master 2</h3>
+    <div class="d">Ringkasan tab Retur. Pesanan yang cocok dengan Orders dan masih berstatus Diproses akan tampil sebagai Retur di dashboard (langkah berikutnya).</div>
+    <div id="rRing"></div>
   </div>
 </section>
 <section class="tab" id="t-kt">
@@ -617,7 +632,7 @@ $('#impBtn').onclick=async()=>{if(!SIM||!R)return;if(!confirm('Tulis '+SIM.baru+
 $('#clrBtn').onclick=()=>{WB={};NAMA={};R=null;SIM=null;$('#fi').value='';$('#files').innerHTML='';tampilFile();$('#hasil').style.display='none';$('#kpis').innerHTML='';$('#cek').innerHTML='';$('#ringkas').innerHTML='';$('#simOut').innerHTML='';$('#stat').textContent='';$('#pgw').style.display='none';$('#pg').style.width='0';$('#paksaW').style.display='none';$('#paksa').checked=false;$('#impBtn').disabled=true;$('#simBtn').disabled=true;window.scrollTo({top:0,behavior:'smooth'})};
 
 /* ===== Tab ===== */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='pb'&&!PB.dimuat)muatPB();if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya();if(b.dataset.t==='of'&&!OF.dimuat)muatOf()});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+b.dataset.t));if(b.dataset.t==='pb'&&!PB.dimuat)muatPB();if(b.dataset.t==='hp'&&!HP.dimuat)muatHP();if(b.dataset.t==='bi'&&!BK.dimuat)muatBiaya();if(b.dataset.t==='of'&&!OF.dimuat)muatOf();if(b.dataset.t==='rt'&&!RT.dimuat)muatRt()});
 /* ===== Input Biaya ===== */
 const BK={kategori:['Operasional','Bahan Pokok','Bahan Pendukung','Iklan','Amal'],sub:{},metode:[],terbaru:[],bulan_ini:null,dimuat:false};
 const IKL=['Iklan TikTok','Iklan Shopee','Iklan Lazada','Iklan CPAS','Iklan IG Video','Iklan TikTok Video','Iklan KOL','Iklan Lain-lain'];
@@ -745,6 +760,31 @@ $('#kRun').onclick=async()=>{$('#kRun').disabled=true;$('#kCek').disabled=true;
   try{const c=await postOp(kBody(true));if(!confirm('Tulis '+c.baru+' baris baru ke Buku_Kas?')){pesanK('Dibatalkan.',true);$('#kRun').disabled=false;$('#kCek').disabled=false;return}
     const r=await postOp(kBody(false));pesanK('Tersimpan '+r.ditulis+' baris.'+(r.log_galat?' CATATAN: baris LOG_PERUBAHAN gagal ditulis ('+r.log_galat+'). Catat manual.':' Tercatat di LOG_PERUBAHAN.'),!r.log_galat);$('#kOut').innerHTML=''}
   catch(e){pesanK(e.message,false);$('#kRun').disabled=false}$('#kCek').disabled=false};
+/* ----- Retur ----- */
+const RT={dimuat:false};
+function pesanR(t,ok){const m=$('#rMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+const rtKp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+function rRtRingkas(d){const g=d.ringkas||{};let h='<div class="kpis">'+rtKp('Baris retur',g.baris||0,(g.qty||0)+' pcs')+rtKp('Pesanan',g.pesanan||0,'unik')+rtKp('Cocok di Orders',g.cocok_orders||0,(g.tidak_cocok||0)+' belum cocok')+rtKp('Diproses jadi Retur',g.menggantung_jadi_retur||0,'pesanan menggantung')+rtKp('Perlu dicek',g.perlu_cek||0,'lihat kolom Catatan cek')+'</div>';
+  const pc=(d.per_channel||[]);if(pc.length)h+='<div class="sub" style="margin-top:8px">'+pc.map(x=>esc(x.channel)+': '+x.pesanan+' pesanan, '+x.qty+' pcs').join(' · ')+'</div>';
+  const L=(d.baris||[]).slice(0,25);
+  if(L.length)h+=`<h4 style="margin:14px 0 6px;font-size:13px">25 retur terbaru</h4><div class="tw" style="max-height:420px;overflow:auto"><table><thead><tr><th class="l">Tanggal</th><th class="l">ID Pesanan</th><th class="l">Channel</th><th class="l">Produk</th><th>Qty</th><th class="l">Alasan</th><th class="l">Kondisi</th><th class="l">Status di Orders</th><th class="l">Catatan cek</th></tr></thead><tbody>${L.map(x=>`<tr><td class="l">${esc(x.notif)}</td><td class="l">${esc(x.id)}</td><td class="l">${esc(x.ch)}</td><td class="l">${esc(x.produk)}</td><td>${x.qty}</td><td class="l">${esc(x.alasan)}</td><td class="l">${esc(x.kondisi)}</td><td class="l">${x.sumber==='Hilang dari sumber'?'Hilang dari sumber':x.di_orders?esc(x.status_order||'-'):'Belum cocok'}</td><td class="l wrp">${esc(x.cek)}</td></tr>`).join('')}</tbody></table></div>`;
+  else h+='<div class="sub" style="margin-top:8px">Tab Retur masih kosong. Tekan Cek dulu lalu Sinkron sekarang.</div>';
+  $('#rRing').innerHTML=h}
+async function muatRt(){try{const d=await jsonpB('retur_data');if(d.error)throw new Error(d.error);if(d.ada_tab===false)throw new Error(d.galat||'Tab Retur belum dibuat di Master 2');RT.dimuat=true;rRtRingkas(d)}catch(e){$('#rRing').innerHTML='';pesanR(e.message,false)}}
+function rSinkRt(r){let h='<div class="kpis">'+rtKp('Dibaca',r.dibaca,'baris valid')+rtKp('Baru',r.baru,'akan ditulis')+rtKp('Diubah',r.diubah,'diperbarui di tempat')+rtKp('Hilang dari sumber',r.hilang,'hanya ditandai')+rtKp('Dilewati',r.dilewati,(r.baris_uji||0)+' baris uji')+'</div>';
+  const pc=Object.keys(r.per_channel||{});if(pc.length)h+='<div class="sub" style="margin-top:8px">'+pc.map(k=>esc(k)+': '+r.per_channel[k].baris+' baris, '+r.per_channel[k].qty+' pcs').join(' · ')+'</div>';
+  if((r.contoh_perlu_cek||[]).length)h+=`<details style="margin-top:10px" open><summary class="sub" style="cursor:pointer">${r.perlu_cek} baris perlu dicek (tetap ditulis, ditandai di kolom Perlu_Cek)</summary><div class="tw" style="max-height:320px;overflow:auto"><table><thead><tr><th>Baris sumber</th><th class="l">ID Pesanan</th><th class="l">Produk</th><th class="l">Yang perlu dicek</th></tr></thead><tbody>${r.contoh_perlu_cek.map(x=>`<tr><td>${x.baris}</td><td class="l">${esc(x.id)}</td><td class="l">${esc(x.produk)}</td><td class="l wrp">${esc(x.cek)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  if((r.contoh_dilewati||[]).length)h+=`<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">${r.dilewati} baris dilewati (tidak ditulis)</summary><div class="tw"><table><thead><tr><th>Baris sumber</th><th class="l">Alasan</th></tr></thead><tbody>${r.contoh_dilewati.map(x=>`<tr><td>${x.baris}</td><td class="l">${esc(x.alasan)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  $('#rOut').innerHTML=h}
+const rBody=dry=>({op:'retur_sinkron',dry,izinkan_banyak:$('#rBny').checked});
+$('#rMuat').onclick=()=>{RT.dimuat=false;$('#rMsg').className='msg';$('#rMsg').textContent='';muatRt()};
+$('#rCek').onclick=async()=>{$('#rRun').disabled=true;$('#rCek').disabled=true;pesanR('Membaca REPORT RETUR MP…',true);
+  try{const r=await postOp(rBody(true));rSinkRt(r);const ada=r.baru+r.diubah+r.hilang;$('#rRun').disabled=!ada;pesanR(ada?'Hasil pengecekan di bawah. Belum ada yang ditulis. Tekan Sinkron sekarang bila sudah sesuai.':'Tidak ada perubahan: tab Retur sudah sama dengan REPORT RETUR MP.',true)}
+  catch(e){$('#rOut').innerHTML='';pesanR(e.message,false)}$('#rCek').disabled=false};
+$('#rRun').onclick=async()=>{$('#rRun').disabled=true;$('#rCek').disabled=true;
+  try{const c=await postOp(rBody(true));if(!confirm('Sinkron retur: '+c.baru+' baru, '+c.diubah+' diubah, '+c.hilang+' ditandai hilang?')){pesanR('Dibatalkan.',true);$('#rRun').disabled=false;$('#rCek').disabled=false;return}
+    const r=await postOp(rBody(false));pesanR('Tersimpan '+r.ditulis+' perubahan.'+(r.log_galat?' CATATAN: baris LOG_PERUBAHAN gagal ditulis ('+r.log_galat+'). Catat manual.':' Tercatat di LOG_PERUBAHAN.'),!r.log_galat);$('#rOut').innerHTML='';RT.dimuat=false;await muatRt()}
+  catch(e){pesanR(e.message,false);$('#rRun').disabled=false}$('#rCek').disabled=false};
 /* ----- Upload Affiliate ----- */
 const AF=[];const BLN3={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
 function pesanAf(t,ok){const m=$('#afMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
