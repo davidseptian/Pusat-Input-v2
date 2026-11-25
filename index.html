@@ -170,7 +170,7 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
   <button class="btn" id="resetBtn">Hapus kunci</button>
 </div>
 
-<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="of">Penjualan Offline</button><button data-t="rt">Retur</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button></nav>
+<nav class="tabs" id="tabs"><button class="on" data-t="up">Upload Marketplace</button><button data-t="bi">Input Biaya</button><button data-t="of">Penjualan Offline</button><button data-t="rt">Retur</button><button data-t="hp">Hutang &amp; Piutang</button><button data-t="pb">Pembagian SHU</button><button data-t="kt">Tarik Catatan SHU</button><button data-t="af">Upload Affiliate</button><button data-t="ik">Upload Iklan</button></nav>
 <section class="tab on" id="t-up">
 <div class="card" style="margin-top:16px">
   <h3>1. Pilih file</h3>
@@ -344,6 +344,17 @@ function hapusK(){try{localStorage.removeItem(KEYN);sessionStorage.removeItem(KE
     <div class="bar"><button class="btn" id="afCek" disabled>Cek dulu</button><button class="btn gold" id="afRun" disabled>Simpan ke Master 3</button><button class="btn" id="afClr" disabled>Kosongkan</button></div>
     <div class="msg" id="afMsg"></div>
     <div id="afOut" style="margin-top:10px"></div>
+  </div>
+</section>
+<section class="tab" id="t-ik">
+  <div class="card" style="margin-top:14px">
+    <h3>Upload Iklan per Produk (bulanan)</h3>
+    <div class="d">Unggah laporan iklan per produk satu bulan penuh: Shopee (Data Keseluruhan Iklan Shopee, .csv) dan TikTok Shop (Product_data iklan, .xlsx). Platform dikenali otomatis dari isi file. Shopee membaca periode dari file; TikTok tidak mencantumkan periode, jadi pilih bulannya. Data masuk ke Master 2 (tab Iklan_Produk), lalu ROAS per produk muncul di dashboard Penjualan, tab Iklan &amp; ROAS. Upload ulang bulan yang sama hanya memperbarui angka, tidak membuat baris dobel. File dibaca di browser ini.</div>
+    <div class="drop" id="ikDrop">Tarik file iklan ke sini atau klik untuk memilih<input type="file" id="ikFi" accept=".csv,.xlsx" multiple style="display:none"></div>
+    <div id="ikList" style="margin-top:12px"></div>
+    <div class="bar"><button class="btn" id="ikCek" disabled>Cek dulu</button><button class="btn gold" id="ikRun" disabled>Simpan ke Master 2</button><button class="btn" id="ikClr" disabled>Kosongkan</button></div>
+    <div class="msg" id="ikMsg"></div>
+    <div id="ikOut" style="margin-top:10px"></div>
   </div>
 </section>
 <section class="tab" id="t-pb">
@@ -828,6 +839,58 @@ $('#afRun').onclick=async()=>{$('#afRun').disabled=true;$('#afCek').disabled=tru
       n+=r.afiliator_baru;s+=r.snap_baru+r.snap_diubah;if(r.log_galat)lg=r.log_galat}}
     pesanAf(lambat?'Data sudah tertulis di Master 3, tetapi jawaban server terlambat sehingga hitungan di sini tidak lengkap. Cek LOG_PERUBAHAN dan Afiliator_Snapshot untuk memastikan.':'Tersimpan: '+n+' akun baru, '+s+' snapshot bulanan. Tercatat di LOG_PERUBAHAN. Dashboard Affiliate memuat ulang sendiri dalam beberapa menit.'+(lg?' CATATAN: data sudah tersimpan tetapi baris LOG_PERUBAHAN gagal ditulis ('+lg+'). Catat manual.':''),!lg);$('#afOut').innerHTML='';AF.length=0;rAfList()}
   catch(e){pesanAf(e.message+' · Aman diulang: baris yang sudah tertulis tidak akan dobel.',false);$('#afRun').disabled=false}$('#afCek').disabled=false};
+/* ===== Upload Iklan per Produk ===== */
+const IK=[];
+function pesanIk(t,ok){const m=$('#ikMsg');m.className='msg '+(ok?'ok':'er');m.textContent=t}
+const ikTgl=(y,m,d)=>y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+function ikAkhirBulan(ym){const[y,m]=ym.split('-').map(Number);return ikTgl(y,m,new Date(y,m,0).getDate())}
+function ikParse(rows){
+  const cell=v=>String(v==null?'':v).trim();
+  const hi=rows.findIndex(r=>(r||[]).some(c=>cell(c)==='Nama Iklan')&&(r||[]).some(c=>cell(c)==='Kode Produk'));
+  if(hi>=0){const h=rows[hi].map(cell),ix=n=>h.indexOf(n);
+    const c={n:ix('Nama Iklan'),s:ix('Status'),k:ix('Kode Produk'),m:ix('Mode Bidding'),dl:ix('Dilihat'),kl:ix('Jumlah Klik'),kv:ix('Konversi'),pt:ix('Produk Terjual'),om:ix('Omzet Penjualan'),lg:ix('Penjualan Langsung (GMV Langsung)'),b:ix('Biaya')};
+    if(c.k<0||c.om<0||c.b<0)throw new Error('Kolom Shopee tidak lengkap (perlu Kode Produk, Omzet Penjualan, Biaya)');
+    let per=null;for(const r of rows.slice(0,hi)){const t=(r||[]).map(cell).join(' ');const m=/(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(t);if(m){per={mulai:ikTgl(m[3],m[2],m[1]),selesai:ikTgl(m[6],m[5],m[4])};break}}
+    if(!per)throw new Error('Baris Periode tidak ditemukan di file Shopee');
+    const g=(r,i)=>i<0?0:Math.round(afNum(r[i]));
+    const out=rows.slice(hi+1).filter(r=>r&&cell(r[c.n])).map(r=>{const kode=cell(r[c.k]).replace(/\.0+$/,''),auto=!kode||kode==='-';
+      return{id:auto?'':kode,nama:cell(r[c.n]),status:c.s<0?'':cell(r[c.s]),bid:c.m<0?'':cell(r[c.m]).slice(0,40),biaya:g(r,c.b),omzet:g(r,c.om),langsung:g(r,c.lg),pesanan:g(r,c.kv),unit:g(r,c.pt),klik:g(r,c.kl),dilihat:g(r,c.dl)}});
+    return{plat:'SHOPEE',rows:out,mulai:per.mulai,selesai:per.selesai}}
+  const ht=rows.findIndex(r=>(r||[]).some(c=>cell(c)==='ID produk')&&(r||[]).some(c=>/^Nama produk$/i.test(cell(c))));
+  if(ht>=0){const h=rows[ht].map(cell),ix=n=>h.findIndex(x=>x.toLowerCase()===n.toLowerCase());
+    const c={n:ix('Nama produk'),id:ix('ID produk'),b:ix('Biaya'),p:ix('Pesanan SKU'),om:ix('Pendapatan kotor')};
+    if(c.b<0||c.om<0)throw new Error('Kolom TikTok tidak lengkap (perlu ID produk, Biaya, Pendapatan kotor)');
+    const out=rows.slice(ht+1).filter(r=>r&&cell(r[c.n])).map(r=>{let id=r[c.id];if(typeof id==='number'){if(id>9007199254740991)throw new Error('ID produk TikTok terbaca sebagai angka dan terpotong. Simpan kolom ID produk sebagai teks di file, lalu unggah ulang.');id=String(id)}
+      return{id:cell(id).replace(/\.0+$/,''),nama:cell(r[c.n]),status:'Berjalan',bid:'GMV Max',biaya:Math.round(afNum(r[c.b])),omzet:Math.round(afNum(r[c.om])),langsung:0,pesanan:c.p<0?0:Math.round(afNum(r[c.p])),unit:0,klik:0,dilihat:0}});
+    return{plat:'TIKTOK',rows:out,mulai:'',selesai:''}}
+  throw new Error('Format tidak dikenali: bukan laporan iklan Shopee (kolom Nama Iklan, Kode Produk) maupun TikTok (kolom Nama produk, ID produk)')}
+function ikGabung(L){const m={},o=[];L.forEach(r=>{const k=r.id||('A:'+r.nama.toLowerCase());if(!m[k]){m[k]=Object.assign({},r);o.push(m[k])}else['biaya','omzet','langsung','pesanan','unit','klik','dilihat'].forEach(f=>m[k][f]+=r[f])});return o}
+function bacaIk(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{try{const csv=/\.csv$/i.test(f.name);const wb=csv?XLSX.read(r.result,{type:'string',raw:true}):XLSX.read(new Uint8Array(r.result),{type:'array'});res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''}))}catch(e){rej(e)}};r.onerror=()=>rej(new Error('File tidak bisa dibaca'));if(/\.csv$/i.test(f.name))r.readAsText(f);else r.readAsArrayBuffer(f)})}
+function ikRange(x){if(x.plat==='SHOPEE')return{mulai:x.mulai,selesai:x.selesai};return x.bulan?{mulai:x.bulan+'-01',selesai:ikAkhirBulan(x.bulan)}:{mulai:'',selesai:''}}
+function rIkList(){const L=$('#ikList');if(!IK.length){L.innerHTML='';$('#ikCek').disabled=true;$('#ikRun').disabled=true;$('#ikClr').disabled=true;return}
+  L.innerHTML=`<div class="tw"><table><thead><tr><th class="l">File</th><th class="l">Platform</th><th>Listing</th><th>Biaya</th><th>Omzet iklan</th><th class="l">Periode</th><th></th></tr></thead><tbody>${IK.map((x,i)=>`<tr><td class="l">${esc(x.nama)}</td><td class="l">${x.plat==='TIKTOK'?'TikTok Shop':'Shopee'}</td><td>${x.rows.length}</td><td>${rp(x.rows.reduce((a,r)=>a+r.biaya,0))}</td><td>${rp(x.rows.reduce((a,r)=>a+r.omzet,0))}</td><td class="l">${x.plat==='SHOPEE'?esc(x.mulai)+' s/d '+esc(x.selesai):`<input type="month" data-i="${i}" class="ikBln" value="${esc(x.bulan)}">`}</td><td><button class="btn" data-x="${i}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`;
+  L.querySelectorAll('.ikBln').forEach(e=>e.onchange=()=>{IK[+e.dataset.i].bulan=e.value;$('#ikRun').disabled=true});L.querySelectorAll('[data-x]').forEach(e=>e.onclick=()=>{IK.splice(+e.dataset.x,1);$('#ikOut').innerHTML='';$('#ikRun').disabled=true;rIkList()});
+  $('#ikCek').disabled=false;$('#ikClr').disabled=false}
+async function ikTambah(files){const gagal=[];for(const f of files){try{if(IK.some(x=>x.nama===f.name))throw new Error('sudah ada di daftar');const p=ikParse(await bacaIk(f));if(!p.rows.length)throw new Error('tidak ada baris data');IK.push({nama:f.name,plat:p.plat,rows:ikGabung(p.rows),mulai:p.mulai,selesai:p.selesai,bulan:p.plat==='TIKTOK'?(((m=>m?m[1]+'-'+m[2]:'')(/(20\d{2})-(\d{2})-\d{2}_-_\1-\2-\d{2}/.exec(f.name)))||afBulan(f.name)):''})}catch(e){gagal.push(f.name+': '+e.message)}}
+  rIkList();$('#ikOut').innerHTML='';$('#ikRun').disabled=true;if(gagal.length)pesanIk(gagal.join(' · '),false);else pesanIk(IK.length?'File terbaca. Periksa platform dan periode, lalu tekan Cek dulu.':'',true)}
+$('#ikDrop').onclick=()=>$('#ikFi').click();$('#ikFi').onchange=e=>{ikTambah([...e.target.files]);e.target.value=''};
+$('#ikDrop').ondragover=e=>{e.preventDefault();$('#ikDrop').classList.add('on')};$('#ikDrop').ondragleave=()=>$('#ikDrop').classList.remove('on');$('#ikDrop').ondrop=e=>{e.preventDefault();$('#ikDrop').classList.remove('on');ikTambah([...e.dataTransfer.files])};
+$('#ikClr').onclick=()=>{IK.length=0;$('#ikOut').innerHTML='';pesanIk('',true);rIkList()};
+const ikBody=(x,dry,baris)=>{const r=ikRange(x);return{op:'iklan_impor',dry,channel:x.plat,mulai:r.mulai,selesai:r.selesai,baris:baris||x.rows}};
+function ikCekLokal(){IK.forEach(x=>{const r=ikRange(x);if(!/^\d{4}-\d{2}-\d{2}$/.test(r.mulai))throw new Error((x.plat==='TIKTOK'?'TikTok':'Shopee')+' '+x.nama+': isi bulan dulu');if(r.mulai.slice(0,7)!==r.selesai.slice(0,7))throw new Error(x.nama+': periode melewati dua bulan, unduh laporan per bulan')});const k={};IK.forEach(x=>{const z=x.plat+ikRange(x).mulai.slice(0,7);if(k[z])throw new Error('Dua file untuk platform dan bulan yang sama');k[z]=1})}
+function rIk(x,r){const kp=(l,v,n)=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n||''}</div></div>`;
+  return `<h4 style="margin:16px 0 6px;font-size:14px">${x.plat==='TIKTOK'?'TikTok Shop':'Shopee'} · ${esc(r.mulai)} s/d ${esc(r.selesai)}</h4><div class="kpis">${kp('Listing iklan',r.listing,r.baris_file+' baris di file')+kp('Baris baru',r.baru,'akan ditulis ke Iklan_Produk')+kp('Diperbarui',r.diperbarui,'periode sama, angka dikoreksi')+kp('Biaya',rp(r.biaya),'omzet iklan '+rp(r.omzet)+(r.biaya>0?' · ROAS '+(r.omzet/r.biaya).toFixed(2):''))}</div>`}
+$('#ikCek').onclick=async()=>{$('#ikRun').disabled=true;$('#ikCek').disabled=true;pesanIk('Memeriksa…',true);let h='';
+  try{ikCekLokal();for(const x of IK){const r=await postOp(ikBody(x,true));h+=rIk(x,r)}
+    $('#ikOut').innerHTML=h;$('#ikRun').disabled=false;pesanIk('Hasil pengecekan di bawah. Belum ada yang ditulis. Tekan Simpan ke Master 2 bila sudah sesuai.',true)}
+  catch(e){$('#ikOut').innerHTML='';pesanIk(e.message,false)}$('#ikCek').disabled=false};
+$('#ikRun').onclick=async()=>{$('#ikRun').disabled=true;$('#ikCek').disabled=true;
+  try{ikCekLokal();if(!confirm('Simpan '+IK.length+' file iklan ke Master 2?')){pesanIk('Dibatalkan.',true);$('#ikRun').disabled=false;$('#ikCek').disabled=false;return}
+    let b=0,u=0;const UK=200;
+    for(const x of IK){const bag=Math.ceil(x.rows.length/UK);for(let i=0;i<bag;i++){pesanIk('Menyimpan '+(x.plat==='TIKTOK'?'TikTok':'Shopee')+' bagian '+(i+1)+' dari '+bag+'…',true);
+      const r=await postOp(ikBody(x,false,x.rows.slice(i*UK,(i+1)*UK)));b+=r.baru;u+=r.diperbarui}}
+    pesanIk('Tersimpan: '+b+' baris baru, '+u+' diperbarui. Tercatat di LOG_PERUBAHAN. Buka dashboard Penjualan, tab Iklan & ROAS, untuk memetakan listing baru ke SKU.',true);$('#ikOut').innerHTML='';IK.length=0;rIkList()}
+  catch(e){pesanIk(e.message+' · Aman diulang: baris yang sudah tertulis hanya diperbarui, tidak dobel.',false);$('#ikRun').disabled=false}$('#ikCek').disabled=false};
 /* ===== Hutang & Piutang ===== */
 const JHP=['Piutang Orang','Piutang Bahan','Hutang Bahan','Hutang Lain'];
 const HP={dimuat:false,d:null};let HANT=[];
